@@ -676,12 +676,17 @@ async def payment_webhook(request: Request):
             logger.warning(f"Webhook for unknown order: {order_id}")
             return {"status": "ignored", "reason": "Order not found"}
         
+        # Skip if already processed
+        if donation.get("status") in [PaymentStatus.SUCCESS.value, PaymentStatus.FAILED.value]:
+            logger.info(f"Webhook for already processed order: {order_id}")
+            return {"status": "already_processed"}
+        
         now = datetime.now(timezone.utc).isoformat()
         
         if event_type == "PAYMENT_SUCCESS_WEBHOOK":
-            # Update donation status
-            await db.donations.update_one(
-                {"order_id": order_id},
+            # Use findOneAndUpdate to prevent race conditions - only update if still pending
+            result = await db.donations.find_one_and_update(
+                {"order_id": order_id, "status": PaymentStatus.PENDING.value},
                 {
                     "$set": {
                         "status": PaymentStatus.SUCCESS.value,
@@ -689,23 +694,26 @@ async def payment_webhook(request: Request):
                         "payment_method": payment_info.get("payment_method"),
                         "updated_at": now
                     }
-                }
+                },
+                return_document=False
             )
             
-            # Update collection amount
-            await db.collections.update_one(
-                {"id": donation["collection_id"]},
-                {
-                    "$inc": {"current_amount": donation["amount"], "donor_count": 1},
-                    "$set": {"updated_at": now}
-                }
-            )
-            
-            logger.info(f"Payment webhook: SUCCESS for order {order_id}")
+            # Only update collection if we actually changed the status
+            if result:
+                await db.collections.update_one(
+                    {"id": donation["collection_id"]},
+                    {
+                        "$inc": {"current_amount": donation["amount"], "donor_count": 1},
+                        "$set": {"updated_at": now}
+                    }
+                )
+                logger.info(f"Payment webhook: SUCCESS for order {order_id}")
+            else:
+                logger.info(f"Payment webhook: order {order_id} already processed")
             
         elif event_type == "PAYMENT_FAILED_WEBHOOK":
             await db.donations.update_one(
-                {"order_id": order_id},
+                {"order_id": order_id, "status": PaymentStatus.PENDING.value},
                 {"$set": {"status": PaymentStatus.FAILED.value, "updated_at": now}}
             )
             logger.info(f"Payment webhook: FAILED for order {order_id}")
