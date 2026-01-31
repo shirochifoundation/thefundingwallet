@@ -14,10 +14,7 @@ import hashlib
 import hmac
 import base64
 import json
-from cashfree_pg.models.create_order_request import CreateOrderRequest
-from cashfree_pg.models.customer_details import CustomerDetails
-from cashfree_pg.models.order_meta import OrderMeta
-from cashfree_pg.api_client import Cashfree
+import aiohttp
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,11 +28,7 @@ db = client[os.environ['DB_NAME']]
 CASHFREE_CLIENT_ID = os.environ.get('CASHFREE_CLIENT_ID')
 CASHFREE_SECRET_KEY = os.environ.get('CASHFREE_SECRET_KEY')
 CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
-
-# Initialize Cashfree
-Cashfree.XClientId = CASHFREE_CLIENT_ID
-Cashfree.XClientSecret = CASHFREE_SECRET_KEY
-Cashfree.XEnvironment = Cashfree.SANDBOX if CASHFREE_ENVIRONMENT == 'SANDBOX' else Cashfree.PRODUCTION
+CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/pg"
 
 # Create the main app
 app = FastAPI(title="FundFlow API", version="1.0.0")
