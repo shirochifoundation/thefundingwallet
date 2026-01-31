@@ -83,6 +83,18 @@ class PaymentStatus(str, Enum):
     FAILED = "failed"
     REFUNDED = "refunded"
 
+class KYCStatus(str, Enum):
+    NOT_SUBMITTED = "not_submitted"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+class WithdrawalStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
 
 # ==================== AUTH MODELS ====================
 class UserRegister(BaseModel):
