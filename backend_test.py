@@ -511,7 +511,13 @@ class FundFlowAPITester:
         self.test_get_categories()
         self.test_get_stats()
         
-        # Collection tests
+        # Authentication tests
+        self.test_user_registration()
+        self.test_user_login()
+        self.test_get_current_user()
+        self.test_collections_requires_auth()
+        
+        # Collection tests (with authentication)
         self.test_create_collection()
         self.test_get_collections()
         self.test_get_collection_by_id()
