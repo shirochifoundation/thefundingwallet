@@ -13,6 +13,8 @@ import AboutPage from "@/pages/AboutPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import MyCollectionsPage from "@/pages/MyCollectionsPage";
+import ProfilePage from "@/pages/ProfilePage";
+import AdminPage from "@/pages/AdminPage";
 import { Loader2 } from "lucide-react";
 
 // Protected Route component
@@ -59,10 +61,19 @@ function AppRoutes() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="/payment/callback" element={<PaymentCallback />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Layout>
     </>

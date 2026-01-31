@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
+  const [kycStatus, setKycStatus] = useState(null);
 
   useEffect(() => {
     if (token) {
@@ -25,14 +26,32 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
+      setKycStatus(response.data.kyc_status || "not_submitted");
     } catch (error) {
       console.error("Error fetching user:", error);
       // Token might be invalid, clear it
       localStorage.removeItem("token");
       setToken(null);
       setUser(null);
+      setKycStatus(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshKycStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/kyc/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setKycStatus(response.data.status);
+      return response.data.status;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setKycStatus("not_submitted");
+        return "not_submitted";
+      }
+      return kycStatus;
     }
   };
 
@@ -42,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", access_token);
     setToken(access_token);
     setUser(userData);
+    setKycStatus(userData.kyc_status || "not_submitted");
     return userData;
   };
 
@@ -56,6 +76,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", access_token);
     setToken(access_token);
     setUser(userData);
+    setKycStatus("not_submitted");
     return userData;
   };
 
@@ -63,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+    setKycStatus(null);
   };
 
   const getAuthHeader = () => {
@@ -78,7 +100,9 @@ export const AuthProvider = ({ children }) => {
       register, 
       logout, 
       getAuthHeader,
-      isAuthenticated: !!user 
+      isAuthenticated: !!user,
+      kycStatus,
+      refreshKycStatus
     }}>
       {children}
     </AuthContext.Provider>
