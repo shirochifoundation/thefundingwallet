@@ -110,15 +110,15 @@ export const Layout = ({ children }) => {
                 </>
               ) : (
                 <>
-                  <Link to="/login" data-testid="login-btn" className="hidden md:block">
-                    <Button variant="ghost" className="rounded-full px-4 text-zinc-600 hover:text-[#0a0a0a]">
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Sign In
+                  <Link to="/login" data-testid="login-btn">
+                    <Button variant="ghost" className="rounded-full px-3 md:px-4 text-zinc-600 hover:text-[#0a0a0a]">
+                      <LogIn className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">Sign In</span>
                     </Button>
                   </Link>
                   <Link to="/register" data-testid="register-btn">
-                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full w-10 h-10 p-0 md:w-auto md:h-auto md:px-6 md:py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-                      <PlusCircle className="w-5 h-5 md:hidden" />
+                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-4 py-2 md:px-6 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                      <span className="md:hidden">Sign Up</span>
                       <span className="hidden md:inline">Get Started</span>
                     </Button>
                   </Link>
