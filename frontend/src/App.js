@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
+import ScrollToTop from "@/components/ScrollToTop";
 import HomePage from "@/pages/HomePage";
 import BrowseCollections from "@/pages/BrowseCollections";
 import CollectionDetails from "@/pages/CollectionDetails";
@@ -35,33 +36,36 @@ const ProtectedRoute = ({ children }) => {
 
 function AppRoutes() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/browse" element={<BrowseCollections />} />
-        <Route path="/collection/:id" element={<CollectionDetails />} />
-        <Route 
-          path="/create" 
-          element={
-            <ProtectedRoute>
-              <CreateCollection />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/my-collections" 
-          element={
-            <ProtectedRoute>
-              <MyCollectionsPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="/payment/callback" element={<PaymentCallback />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Routes>
-    </Layout>
+    <>
+      <ScrollToTop />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/browse" element={<BrowseCollections />} />
+          <Route path="/collection/:id" element={<CollectionDetails />} />
+          <Route 
+            path="/create" 
+            element={
+              <ProtectedRoute>
+                <CreateCollection />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/my-collections" 
+            element={
+              <ProtectedRoute>
+                <MyCollectionsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/payment/callback" element={<PaymentCallback />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Routes>
+      </Layout>
+    </>
   );
 }
 
