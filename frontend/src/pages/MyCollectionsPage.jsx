@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import WithdrawalModal from "@/components/WithdrawalModal";
 import {
   PlusCircle,
   Loader2,
@@ -18,13 +19,17 @@ import {
   TrendingUp,
   Wallet,
   Globe,
-  Lock
+  Lock,
+  ArrowDownToLine,
+  Clock,
+  CheckCircle2
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
 
@@ -43,36 +48,51 @@ const categoryColors = {
 };
 
 export default function MyCollectionsPage() {
-  const { user, getAuthHeader } = useAuth();
+  const { user, getAuthHeader, kycStatus, refreshKycStatus } = useAuth();
   const [collections, setCollections] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalCollections: 0,
     totalRaised: 0,
-    totalDonors: 0
+    totalDonors: 0,
+    totalWithdrawn: 0,
+    totalAvailable: 0
   });
+  const [withdrawalModal, setWithdrawalModal] = useState({ open: false, collection: null });
 
   useEffect(() => {
-    fetchMyCollections();
+    fetchData();
   }, []);
 
-  const fetchMyCollections = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axios.get(`${API}/my-collections`, {
-        headers: getAuthHeader()
-      });
-      setCollections(response.data);
+      const [collectionsRes, withdrawalsRes] = await Promise.all([
+        axios.get(`${API}/my-collections`, { headers: getAuthHeader() }),
+        axios.get(`${API}/withdrawals`, { headers: getAuthHeader() })
+      ]);
+      
+      setCollections(collectionsRes.data);
+      setWithdrawals(withdrawalsRes.data);
       
       // Calculate stats
-      const totalRaised = response.data.reduce((sum, c) => sum + c.current_amount, 0);
-      const totalDonors = response.data.reduce((sum, c) => sum + c.donor_count, 0);
+      const totalRaised = collectionsRes.data.reduce((sum, c) => sum + c.current_amount, 0);
+      const totalDonors = collectionsRes.data.reduce((sum, c) => sum + c.donor_count, 0);
+      const totalWithdrawn = collectionsRes.data.reduce((sum, c) => sum + (c.withdrawn_amount || 0), 0);
+      const totalAvailable = totalRaised - totalWithdrawn;
+      
       setStats({
-        totalCollections: response.data.length,
+        totalCollections: collectionsRes.data.length,
         totalRaised,
-        totalDonors
+        totalDonors,
+        totalWithdrawn,
+        totalAvailable
       });
+      
+      // Refresh KYC status
+      refreshKycStatus();
     } catch (error) {
-      console.error("Error fetching collections:", error);
+      console.error("Error fetching data:", error);
       toast.error("Failed to load your collections");
     } finally {
       setLoading(false);
@@ -85,10 +105,16 @@ export default function MyCollectionsPage() {
     toast.success("Link copied to clipboard!");
   };
 
+  const handleWithdrawClick = (e, collection) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setWithdrawalModal({ open: true, collection });
+  };
+
   const formatAmount = (amount) => {
     if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
     if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
-    return `₹${amount.toLocaleString('en-IN')}`;
+    return `₹${amount?.toLocaleString('en-IN') || 0}`;
   };
 
   const formatDate = (dateStr) => {
@@ -97,6 +123,31 @@ export default function MyCollectionsPage() {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const getKYCStatusBadge = () => {
+    switch(kycStatus) {
+      case "approved":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 rounded-full px-3">
+            <CheckCircle2 className="w-3 h-3 mr-1" /> KYC Verified
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge className="bg-amber-100 text-amber-700 rounded-full px-3">
+            <Clock className="w-3 h-3 mr-1" /> KYC Pending
+          </Badge>
+        );
+      default:
+        return (
+          <Link to="/profile">
+            <Badge className="bg-red-100 text-red-700 rounded-full px-3 hover:bg-red-200 cursor-pointer">
+              Complete KYC to Withdraw
+            </Badge>
+          </Link>
+        );
+    }
   };
 
   if (loading) {
@@ -124,55 +175,83 @@ export default function MyCollectionsPage() {
               Manage and track all your fundraising campaigns
             </p>
           </div>
-          <Link to="/create">
-            <Button 
-              className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 font-semibold"
-              data-testid="create-new-btn"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Create New Collection
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            {getKYCStatusBadge()}
+            <Link to="/create">
+              <Button 
+                className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 font-semibold"
+                data-testid="create-new-btn"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Create New Collection
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-          <div className="bg-gradient-to-br from-[#002FA7] to-[#0047d6] rounded-2xl p-6 text-white">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Wallet className="w-5 h-5" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="bg-gradient-to-br from-[#002FA7] to-[#0047d6] rounded-2xl p-5 text-white">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <IndianRupee className="w-4 h-4" />
               </div>
-              <span className="text-blue-100 text-sm">Total Raised</span>
+              <span className="text-blue-100 text-xs">Total Raised</span>
             </div>
-            <p className="text-3xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+            <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
               {formatAmount(stats.totalRaised)}
             </p>
           </div>
           
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FF5F00]/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-[#FF5F00]" />
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
               </div>
-              <span className="text-zinc-500 text-sm">Active Collections</span>
+              <span className="text-emerald-100 text-xs">Available</span>
             </div>
-            <p className="text-3xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
+            <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+              {formatAmount(stats.totalAvailable)}
+            </p>
+          </div>
+          
+          <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[#FF5F00]/10 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-[#FF5F00]" />
+              </div>
+              <span className="text-zinc-500 text-xs">Collections</span>
+            </div>
+            <p className="text-2xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
               {stats.totalCollections}
             </p>
           </div>
           
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-zinc-100 flex items-center justify-center">
+                <Users className="w-4 h-4 text-zinc-600" />
               </div>
-              <span className="text-zinc-500 text-sm">Total Donors</span>
+              <span className="text-zinc-500 text-xs">Total Donors</span>
             </div>
-            <p className="text-3xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
+            <p className="text-2xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
               {stats.totalDonors}
             </p>
           </div>
         </div>
+
+        {/* Withdrawal History Link */}
+        {withdrawals.length > 0 && (
+          <div className="mb-6 p-4 bg-zinc-50 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ArrowDownToLine className="w-5 h-5 text-zinc-500" />
+              <span className="text-sm text-zinc-600">
+                You have <strong>{withdrawals.length}</strong> withdrawal request(s). 
+                Total withdrawn: <strong>{formatAmount(stats.totalWithdrawn)}</strong>
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Collections List */}
         {collections.length > 0 ? (
@@ -180,6 +259,7 @@ export default function MyCollectionsPage() {
             {collections.map((collection, index) => {
               const progress = Math.min((collection.current_amount / collection.goal_amount) * 100, 100);
               const badgeClass = categoryColors[collection.category?.toLowerCase()] || categoryColors.other;
+              const availableAmount = collection.current_amount - (collection.withdrawn_amount || 0);
               
               return (
                 <Link 
@@ -255,6 +335,15 @@ export default function MyCollectionsPage() {
                                 <Share2 className="w-4 h-4 mr-2" />
                                 Share Link
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => handleWithdrawClick(e, collection)}
+                                className="cursor-pointer text-emerald-600"
+                                disabled={availableAmount <= 0}
+                              >
+                                <ArrowDownToLine className="w-4 h-4 mr-2" />
+                                Withdraw Funds
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -279,12 +368,12 @@ export default function MyCollectionsPage() {
                             <span className="text-sm">{collection.donor_count} donors</span>
                           </div>
                           
-                          {collection.deadline && (
-                            <div className="flex items-center gap-2 text-zinc-600">
-                              <Calendar className="w-4 h-4" />
-                              <span className="text-sm">{formatDate(collection.deadline)}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Wallet className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm text-emerald-600 font-medium">
+                              {formatAmount(availableAmount)} available
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -316,6 +405,16 @@ export default function MyCollectionsPage() {
           </div>
         )}
       </div>
+
+      {/* Withdrawal Modal */}
+      <WithdrawalModal
+        open={withdrawalModal.open}
+        onClose={() => setWithdrawalModal({ open: false, collection: null })}
+        collection={withdrawalModal.collection}
+        kycStatus={kycStatus}
+        getAuthHeader={getAuthHeader}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }
