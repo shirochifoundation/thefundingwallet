@@ -24,6 +24,7 @@ import {
   IndianRupee
 } from "lucide-react";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -41,6 +42,7 @@ const categoryColors = {
 
 export default function CollectionDetails() {
   const { id } = useParams();
+  const { user, isAuthenticated } = useAuth();
   const [collection, setCollection] = useState(null);
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
