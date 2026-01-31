@@ -1,0 +1,195 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "mission": "Create a high-trust, vibrant community funding platform that breaks the generic 'SaaS Blue' mold. Mix Swiss precision with organic warmth.",
+    "principles": [
+      "Fusion over Imitation: Swiss Grid + Organic Textures",
+      "Emotion First: Trust (Medical) vs. Joy (Party) vs. Clarity (Society)",
+      "Content is King: Every collection tells a story",
+      "Negative Space: Luxurious padding (p-8 to p-12)",
+      "Contrast: High contrast text for accessibility and impact"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Bricolage Grotesque, sans-serif",
+      "weights": ["600", "800"],
+      "tracking": "tracking-tight",
+      "usage": "All H1-H3 headings. Use font-weight 800 for Hero titles."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "tracking": "tracking-normal",
+      "usage": "Paragraphs, inputs, labels, data tables."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Transaction IDs, code snippets, financial data."
+    },
+    "installation": "Import via Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap');"
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "background": {
+        "default": "#FFFFFF",
+        "subtle": "#F5F5F7",
+        "dark": "#0A0A0A"
+      },
+      "primary": {
+        "main": "#FF5F00",
+        "description": "Vibrant Orange for high-urgency actions (Donate, Pay).",
+        "foreground": "#FFFFFF"
+      },
+      "secondary": {
+        "main": "#002FA7",
+        "description": "International Klein Blue for trust, headers, and secondary actions.",
+        "foreground": "#FFFFFF"
+      },
+      "accent": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
+      },
+      "text": {
+        "primary": "#0A0A0A",
+        "secondary": "#52525B",
+        "muted": "#A1A1AA"
+      },
+      "border": {
+        "default": "#E4E4E7",
+        "active": "#002FA7"
+      }
+    },
+    "rules": [
+      "Never use pure black (#000000). Use #0A0A0A.",
+      "Primary Orange (#FF5F00) is ONLY for the main 'Donate' or 'Create' call to action.",
+      "Use International Klein Blue (#002FA7) for brand presence and trust markers.",
+      "Backgrounds should be mostly White (#FFFFFF) or very subtle Gray (#F5F5F7). Avoid heavy colored backgrounds."
+    ]
+  },
+  "layout": {
+    "spacing": {
+      "base": "0.25rem",
+      "container_padding": "p-6 md:p-12 lg:p-20",
+      "section_gap": "gap-12 md:gap-24",
+      "component_gap": "gap-4"
+    },
+    "grid": {
+      "marketing": "grid-cols-1 md:grid-cols-12 gap-8 (The Tetris Grid)",
+      "dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 (High Density)",
+      "card_grid": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+    },
+    "container": {
+      "max_width": "max-w-7xl",
+      "center": "mx-auto"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
+      "secondary": "bg-[#002FA7] hover:bg-[#002585] text-white rounded-full px-6 py-4 font-medium shadow-md hover:shadow-lg transition-all",
+      "outline": "border-2 border-[#002FA7] text-[#002FA7] hover:bg-[#002FA7] hover:text-white rounded-full px-6 py-4 font-medium transition-all",
+      "ghost": "text-[#52525B] hover:text-[#0A0A0A] hover:bg-[#F5F5F7] rounded-lg px-4 py-2"
+    },
+    "cards": {
+      "style": "bg-white border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 group",
+      "content_padding": "p-6 or p-8",
+      "image_radius": "rounded-t-2xl or rounded-xl"
+    },
+    "inputs": {
+      "style": "bg-[#F5F5F7] border-transparent focus:border-[#002FA7] focus:bg-white focus:ring-2 focus:ring-[#002FA7]/20 rounded-xl h-12 px-4 transition-all"
+    },
+    "badges": {
+      "style": "rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "soft": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+      "hover": "shadow-[0_8px_30px_rgb(0,0,0,0.12)]",
+      "glow": "shadow-[0_0_20px_rgba(255,95,0,0.3)]"
+    },
+    "borders": {
+      "subtle": "border border-zinc-200",
+      "highlight": "border-l-4 border-[#FF5F00]"
+    },
+    "glassmorphism": {
+      "header": "bg-white/80 backdrop-blur-xl border-b border-white/20",
+      "overlay": "bg-black/20 backdrop-blur-sm"
+    }
+  },
+  "assets": {
+    "hero_images": [
+      {
+        "url": "https://images.unsplash.com/photo-1758272133831-510256416378",
+        "alt": "Diverse group of friends taking a selfie at a rooftop party",
+        "category": "Celebration/Party"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1708593343700-a101f8fe4d11",
+        "alt": "Women standing around a tree, community vibe",
+        "category": "Community/Social"
+      }
+    ],
+    "category_images": {
+      "medical": "https://images.unsplash.com/photo-1581056771107-24ca5f033842",
+      "office": "https://images.unsplash.com/photo-1758691737182-d42aefd6dee8",
+      "festival": "https://images.unsplash.com/photo-1599807502285-4b218782d601",
+      "party": "https://images.unsplash.com/photo-1758272133831-510256416378"
+    },
+    "placeholders": {
+      "user_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+      "collection_cover": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7"
+    }
+  },
+  "motion": {
+    "library": "framer-motion (recommended) or tailwindcss-animate",
+    "transitions": {
+      "default": "transition-all duration-300 ease-out",
+      "hover": "hover:-translate-y-1 hover:scale-[1.02]"
+    },
+    "animations": {
+      "fade_in": "animate-in fade-in duration-500",
+      "slide_up": "animate-in slide-in-from-bottom-4 duration-500"
+    }
+  },
+  "tech_stack": {
+    "framework": "React 19",
+    "styling": "Tailwind CSS",
+    "components": "Shadcn/UI",
+    "icons": "Lucide React"
+  },
+  "instructions_to_main_agent": [
+    "1. Install 'framer-motion' and 'clsx' 'tailwind-merge' if not present.",
+    "2. Update 'index.css' to import Bricolage Grotesque and Inter fonts.",
+    "3. Create a 'Layout' component that handles the responsive container and navigation.",
+    "4. Build the 'CollectionCard' component using the 'Cards' style defined above.",
+    "5. Implement the 'Create Collection' form using Shadcn Form components but styled with the 'Inputs' style.",
+    "6. Use the 'Bento' grid for the Landing Page features section.",
+    "7. Ensure all interactive elements have 'data-testid'.",
+    "8. Use the defined color palette variables in 'tailwind.config.js' or directly in classes."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
