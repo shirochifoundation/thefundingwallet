@@ -477,6 +477,11 @@ async def get_collections(
         cursor = db.collections.find(query, {"_id": 0}).skip(skip).limit(limit).sort("created_at", -1)
         collections = await cursor.to_list(length=limit)
         
+        # Add available_amount calculation
+        for c in collections:
+            c["withdrawn_amount"] = c.get("withdrawn_amount", 0.0)
+            c["available_amount"] = c.get("current_amount", 0.0) - c["withdrawn_amount"]
+        
         return [CollectionResponse(**c) for c in collections]
     except Exception as e:
         logger.error(f"Error fetching collections: {str(e)}")
@@ -489,6 +494,9 @@ async def get_collection(collection_id: str):
         doc = await db.collections.find_one({"id": collection_id}, {"_id": 0})
         if not doc:
             raise HTTPException(status_code=404, detail="Collection not found")
+        # Add available_amount calculation
+        doc["withdrawn_amount"] = doc.get("withdrawn_amount", 0.0)
+        doc["available_amount"] = doc.get("current_amount", 0.0) - doc["withdrawn_amount"]
         return CollectionResponse(**doc)
     except HTTPException:
         raise
