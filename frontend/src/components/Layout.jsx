@@ -64,13 +64,13 @@ export const Layout = ({ children }) => {
             </nav>
 
             {/* Right Side - Auth & CTA */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               {isAuthenticated ? (
                 <>
                   <Link to="/create" data-testid="create-collection-btn">
-                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Start Collection
+                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full w-10 h-10 p-0 md:w-auto md:h-auto md:px-6 md:py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                      <PlusCircle className="w-5 h-5 md:w-4 md:h-4 md:mr-2" />
+                      <span className="hidden md:inline">Start Collection</span>
                     </Button>
                   </Link>
                   
