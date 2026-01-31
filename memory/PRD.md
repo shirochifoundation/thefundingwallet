@@ -12,11 +12,16 @@ Features: Public/private collections, Cashfree payment integration with escrow, 
 - Payment Gateway: Cashfree (with escrow functionality)
 - UI Design: Modern
 - Cashfree API Keys: TEST environment provided
+- Authentication: JWT-based custom auth
 
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- `/api/collections` - CRUD for collections
+- `/api/auth/register` - User registration
+- `/api/auth/login` - User login
+- `/api/auth/me` - Get current user (protected)
+- `/api/collections` - CRUD for collections (create protected)
+- `/api/my-collections` - Get user's collections (protected)
 - `/api/payments/create-order` - Cashfree payment order creation
 - `/api/payments/verify/{order_id}` - Payment verification
 - `/api/webhooks/payment` - Cashfree webhook handler
@@ -24,28 +29,34 @@ Features: Public/private collections, Cashfree payment integration with escrow, 
 - `/api/stats` - Platform statistics
 
 ### Frontend (React + Tailwind + shadcn/ui)
-- HomePage - Hero, use cases, features, active collections
+- HomePage - Hero, active collections
 - BrowseCollections - Search, filter by category
 - CollectionDetails - Overview, Donate form, Donors list tabs
-- CreateCollection - Multi-step wizard (category, details, organizer)
+- CreateCollection - Multi-step wizard (protected route)
 - PaymentCallback - Payment success/failure handling
+- AboutPage - Stats, use cases, features
+- LoginPage - User login
+- RegisterPage - User registration
 
 ### Database Collections
-- `collections` - Collection documents
+- `users` - User accounts with hashed passwords
+- `collections` - Collection documents with user_id
 - `donations` - Donation records with payment status
 
 ## User Personas
-1. **Organizer** - Creates collections for events/causes
-2. **Donor** - Contributes to collections
+1. **Organizer** - Creates collections for events/causes (requires login)
+2. **Donor** - Contributes to collections (no login required)
 3. **Visitor** - Browses public collections
 
 ## Core Requirements (Static)
 - [x] Public/Private collection visibility
-- [x] Multi-category support (celebration, medical, festival, etc.)
+- [x] Multi-category support
 - [x] Cashfree payment integration
 - [x] Real-time donation tracking
 - [x] Share collection links
 - [x] Anonymous donations option
+- [x] User authentication (login/register)
+- [x] Protected collection creation
 
 ## What's Been Implemented (Jan 31, 2026)
 - [x] Complete backend API with Cashfree HTTP integration
@@ -56,6 +67,10 @@ Features: Public/private collections, Cashfree payment integration with escrow, 
 - [x] Payment order creation and verification
 - [x] Webhook endpoint for payment notifications
 - [x] Platform statistics dashboard
+- [x] About Us page with moved sections
+- [x] User authentication (JWT-based)
+- [x] Protected routes for collection creation
+- [x] User dropdown menu with logout
 
 ## Prioritized Backlog
 
@@ -63,10 +78,10 @@ Features: Public/private collections, Cashfree payment integration with escrow, 
 - All core features implemented ✓
 
 ### P1 (Important)
-- [ ] User authentication (organizer login)
 - [ ] Gallery/photos for collections
 - [ ] Email notifications for donations
 - [ ] Payout management to organizers
+- [ ] My Collections dashboard page
 
 ### P2 (Nice to Have)
 - [ ] Social sharing buttons (WhatsApp, Facebook)
@@ -76,8 +91,7 @@ Features: Public/private collections, Cashfree payment integration with escrow, 
 - [ ] Dashboard for organizers
 
 ## Next Tasks
-1. Add user authentication for organizers
-2. Implement gallery feature for collections
-3. Add email notifications on donation success
-4. Build organizer dashboard with analytics
-5. Add social sharing buttons
+1. Implement gallery feature for collections
+2. Add email notifications on donation success
+3. Build My Collections dashboard page
+4. Add social sharing buttons
