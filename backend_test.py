@@ -14,6 +14,8 @@ class FundFlowAPITester:
         self.tests_passed = 0
         self.test_collection_id = None
         self.test_order_id = None
+        self.test_token = None
+        self.test_user_id = None
 
     def log_test(self, name, success, details=""):
         """Log test result"""
