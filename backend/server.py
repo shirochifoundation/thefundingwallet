@@ -390,7 +390,9 @@ async def login(credentials: UserLogin):
             name=user["name"],
             email=user["email"],
             phone=user.get("phone"),
-            created_at=user["created_at"]
+            created_at=user["created_at"],
+            kyc_status=user.get("kyc_status", "not_submitted"),
+            is_admin=user.get("is_admin", False)
         )
         
         return TokenResponse(
