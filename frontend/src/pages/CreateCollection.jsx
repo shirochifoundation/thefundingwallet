@@ -142,13 +142,20 @@ export default function CreateCollection() {
         organizer_name: organizerName,
         organizer_email: organizerEmail,
         organizer_phone: organizerPhone || null
+      }, {
+        headers: getAuthHeader()
       });
 
       toast.success("Collection created successfully!");
       navigate(`/collection/${response.data.id}`);
     } catch (error) {
       console.error("Error creating collection:", error);
-      toast.error(error.response?.data?.detail || "Failed to create collection");
+      if (error.response?.status === 401) {
+        toast.error("Please login to create a collection");
+        navigate("/login");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to create collection");
+      }
     } finally {
       setLoading(false);
     }
