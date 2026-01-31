@@ -7,6 +7,7 @@ import BrowseCollections from "@/pages/BrowseCollections";
 import CollectionDetails from "@/pages/CollectionDetails";
 import CreateCollection from "@/pages/CreateCollection";
 import PaymentCallback from "@/pages/PaymentCallback";
+import AboutPage from "@/pages/AboutPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/collection/:id" element={<CollectionDetails />} />
             <Route path="/create" element={<CreateCollection />} />
             <Route path="/payment/callback" element={<PaymentCallback />} />
+            <Route path="/about" element={<AboutPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>
