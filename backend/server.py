@@ -429,6 +429,7 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             "category": collection.category,
             "goal_amount": collection.goal_amount,
             "current_amount": 0.0,
+            "withdrawn_amount": 0.0,
             "visibility": collection.visibility.value,
             "status": CollectionStatus.ACTIVE.value,
             "deadline": collection.deadline,
@@ -446,6 +447,8 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
         await db.collections.insert_one(doc)
         logger.info(f"Collection created: {collection_id}")
         
+        # Add available_amount for response
+        doc["available_amount"] = 0.0
         return CollectionResponse(**doc)
     except Exception as e:
         logger.error(f"Error creating collection: {str(e)}")
