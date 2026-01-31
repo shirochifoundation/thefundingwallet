@@ -22,7 +22,6 @@ const API = `${BACKEND_URL}/api`;
 
 export default function HomePage() {
   const [collections, setCollections] = useState([]);
-  const [stats, setStats] = useState({ total_collections: 0, total_donations: 0, total_raised: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,24 +30,13 @@ export default function HomePage() {
 
   const fetchData = async () => {
     try {
-      const [collectionsRes, statsRes] = await Promise.all([
-        axios.get(`${API}/collections?limit=6`),
-        axios.get(`${API}/stats`)
-      ]);
-      setCollections(collectionsRes.data);
-      setStats(statsRes.data);
+      const response = await axios.get(`${API}/collections?limit=6`);
+      setCollections(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (amount) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)} Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)} L`;
-    if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
-    return `₹${amount.toLocaleString('en-IN')}`;
   };
 
   const useCases = [
