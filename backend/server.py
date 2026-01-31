@@ -565,6 +565,12 @@ async def get_my_collections(
             {"_id": 0}
         ).skip(skip).limit(limit).sort("created_at", -1)
         collections = await cursor.to_list(length=limit)
+        
+        # Add available_amount calculation
+        for c in collections:
+            c["withdrawn_amount"] = c.get("withdrawn_amount", 0.0)
+            c["available_amount"] = c.get("current_amount", 0.0) - c["withdrawn_amount"]
+        
         return [CollectionResponse(**c) for c in collections]
     except Exception as e:
         logger.error(f"Error fetching user collections: {str(e)}")
