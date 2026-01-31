@@ -90,6 +90,13 @@ export const Layout = ({ children }) => {
                         <p className="text-sm text-zinc-500 truncate">{user?.email}</p>
                       </div>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-collections" className="cursor-pointer" data-testid="my-collections-link">
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          My Collections
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={handleLogout}
                         className="text-red-600 cursor-pointer"
