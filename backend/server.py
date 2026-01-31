@@ -234,20 +234,109 @@ def get_category_image(category: str) -> str:
     return category_images.get(category.lower(), "https://images.unsplash.com/photo-1556761175-5973dc0f32e7")
 
 
+# ==================== AUTH ENDPOINTS ====================
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register(user_data: UserRegister):
+    """Register a new user"""
+    try:
+        # Check if email already exists
+        existing_user = await db.users.find_one({"email": user_data.email.lower()})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Create user
+        user_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        user_doc = {
+            "id": user_id,
+            "name": user_data.name,
+            "email": user_data.email.lower(),
+            "password": get_password_hash(user_data.password),
+            "phone": user_data.phone,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        await db.users.insert_one(user_doc)
+        logger.info(f"User registered: {user_id}")
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": user_id})
+        
+        user_response = UserResponse(
+            id=user_id,
+            name=user_data.name,
+            email=user_data.email.lower(),
+            phone=user_data.phone,
+            created_at=now
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            user=user_response
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registering user: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auth/login", response_model=TokenResponse)
+async def login(credentials: UserLogin):
+    """Login user"""
+    try:
+        # Find user by email
+        user = await db.users.find_one({"email": credentials.email.lower()})
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Verify password
+        if not verify_password(credentials.password, user["password"]):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": user["id"]})
+        
+        user_response = UserResponse(
+            id=user["id"],
+            name=user["name"],
+            email=user["email"],
+            phone=user.get("phone"),
+            created_at=user["created_at"]
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            user=user_response
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error logging in: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(current_user: dict = Depends(get_required_user)):
+    """Get current logged in user"""
+    return UserResponse(**current_user)
+
+
 # ==================== COLLECTION ENDPOINTS ====================
 @api_router.get("/")
 async def root():
     return {"message": "FundFlow API - Group Collection Platform"}
 
 @api_router.post("/collections", response_model=CollectionResponse)
-async def create_collection(collection: CollectionCreate):
-    """Create a new collection/activity"""
+async def create_collection(collection: CollectionCreate, current_user: dict = Depends(get_required_user)):
+    """Create a new collection/activity - requires authentication"""
     try:
         collection_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         
         doc = {
             "id": collection_id,
+            "user_id": current_user["id"],
             "title": collection.title,
             "description": collection.description,
             "category": collection.category,
