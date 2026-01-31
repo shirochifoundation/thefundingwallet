@@ -445,6 +445,14 @@ export default function CollectionDetails() {
                 </div>
 
                 {/* Donor Details */}
+                {isAuthenticated && user && (
+                  <div className="bg-[#002FA7]/5 border border-[#002FA7]/20 rounded-xl p-4 mb-2">
+                    <p className="text-sm text-[#002FA7] font-medium">
+                      Donating as {user.name}
+                    </p>
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-2">
                     Your Name *
@@ -453,9 +461,14 @@ export default function CollectionDetails() {
                     type="text"
                     placeholder="Enter your name"
                     value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    className="h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
+                    onChange={(e) => !isAuthenticated && setDonorName(e.target.value)}
+                    className={`h-12 rounded-xl border-transparent ${
+                      isAuthenticated 
+                        ? 'bg-zinc-100 text-zinc-600 cursor-not-allowed' 
+                        : 'bg-[#f5f5f7] focus:border-[#002FA7] focus:bg-white'
+                    }`}
                     required
+                    readOnly={isAuthenticated}
                     data-testid="donor-name-input"
                   />
                 </div>
@@ -468,27 +481,40 @@ export default function CollectionDetails() {
                     type="email"
                     placeholder="Enter your email"
                     value={donorEmail}
-                    onChange={(e) => setDonorEmail(e.target.value)}
-                    className="h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
+                    onChange={(e) => !isAuthenticated && setDonorEmail(e.target.value)}
+                    className={`h-12 rounded-xl border-transparent ${
+                      isAuthenticated 
+                        ? 'bg-zinc-100 text-zinc-600 cursor-not-allowed' 
+                        : 'bg-[#f5f5f7] focus:border-[#002FA7] focus:bg-white'
+                    }`}
                     required
+                    readOnly={isAuthenticated}
                     data-testid="donor-email-input"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-2">
-                    Phone Number *
+                    Phone Number {isAuthenticated && user?.phone ? '' : '*'}
                   </label>
                   <Input
                     type="tel"
                     placeholder="Enter 10-digit phone number"
                     value={donorPhone}
-                    onChange={(e) => setDonorPhone(e.target.value)}
-                    className="h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
+                    onChange={(e) => !isAuthenticated && setDonorPhone(e.target.value)}
+                    className={`h-12 rounded-xl border-transparent ${
+                      isAuthenticated && user?.phone
+                        ? 'bg-zinc-100 text-zinc-600 cursor-not-allowed' 
+                        : 'bg-[#f5f5f7] focus:border-[#002FA7] focus:bg-white'
+                    }`}
                     pattern="[0-9]{10}"
-                    required
+                    required={!isAuthenticated || !user?.phone}
+                    readOnly={isAuthenticated && !!user?.phone}
                     data-testid="donor-phone-input"
                   />
+                  {isAuthenticated && !user?.phone && (
+                    <p className="text-xs text-zinc-500 mt-1">Phone number required for payment</p>
+                  )}
                 </div>
 
                 <div>
