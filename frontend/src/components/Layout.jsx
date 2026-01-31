@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Home, Search, PlusCircle, Wallet, User, LogOut, LogIn } from "lucide-react";
+import { Home, Search, PlusCircle, Wallet, User, LogOut, LogIn, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export const Layout = ({ children }) => {
