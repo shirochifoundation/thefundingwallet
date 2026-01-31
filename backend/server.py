@@ -381,16 +381,28 @@ async def verify_payment(order_id: str):
         if not donation:
             raise HTTPException(status_code=404, detail="Order not found")
         
-        # Call Cashfree to verify order status
-        api_version = "2023-08-01"
-        cashfree_api = Cashfree()
-        response = cashfree_api.PGFetchOrder(api_version, order_id, None, None)
+        # Call Cashfree to verify order status via HTTP API
+        headers = {
+            "x-client-id": CASHFREE_CLIENT_ID,
+            "x-client-secret": CASHFREE_SECRET_KEY,
+            "x-api-version": "2023-08-01"
+        }
         
-        if not response or not response.data:
+        order_status = None
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{CASHFREE_BASE_URL}/orders/{order_id}",
+                    headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        cf_response = await resp.json()
+                        order_status = cf_response.get("order_status")
+        except Exception as e:
+            logger.error(f"Error fetching order from Cashfree: {e}")
+        
+        if not order_status:
             return {"status": donation.get("status"), "message": "Unable to verify with payment gateway"}
-        
-        cf_order = response.data
-        order_status = cf_order.order_status
         
         # Update local record if status changed
         new_status = donation.get("status")
