@@ -39,6 +39,7 @@ import {
   IndianRupee
 } from "lucide-react";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -56,6 +57,7 @@ const categories = [
 
 export default function CreateCollection() {
   const navigate = useNavigate();
+  const { user, getAuthHeader } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
@@ -66,9 +68,9 @@ export default function CreateCollection() {
   const [goalAmount, setGoalAmount] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [deadline, setDeadline] = useState(null);
-  const [organizerName, setOrganizerName] = useState("");
-  const [organizerEmail, setOrganizerEmail] = useState("");
-  const [organizerPhone, setOrganizerPhone] = useState("");
+  const [organizerName, setOrganizerName] = useState(user?.name || "");
+  const [organizerEmail, setOrganizerEmail] = useState(user?.email || "");
+  const [organizerPhone, setOrganizerPhone] = useState(user?.phone || "");
 
   const validateStep1 = () => {
     if (!category) {
