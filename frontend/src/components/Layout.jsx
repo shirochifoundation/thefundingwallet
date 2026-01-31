@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Home, Search, PlusCircle, Wallet, User, LogOut, LogIn, LayoutDashboard } from "lucide-react";
+import { Home, Search, PlusCircle, Wallet, User, LogOut, LogIn, LayoutDashboard, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export const Layout = ({ children }) => {
@@ -94,6 +94,12 @@ export const Layout = ({ children }) => {
                         <Link to="/my-collections" className="cursor-pointer" data-testid="my-collections-link">
                           <LayoutDashboard className="w-4 h-4 mr-2" />
                           My Collections
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="cursor-pointer" data-testid="profile-link">
+                          <Shield className="w-4 h-4 mr-2" />
+                          Profile & KYC
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
