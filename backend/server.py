@@ -577,6 +577,16 @@ async def verify_payment(order_id: str):
         if not donation:
             raise HTTPException(status_code=404, detail="Order not found")
         
+        # If already processed, just return current status
+        if donation.get("status") in [PaymentStatus.SUCCESS.value, PaymentStatus.FAILED.value]:
+            return {
+                "order_id": order_id,
+                "status": donation.get("status"),
+                "cf_order_status": "PAID" if donation.get("status") == PaymentStatus.SUCCESS.value else "FAILED",
+                "amount": donation.get("amount"),
+                "collection_id": donation.get("collection_id")
+            }
+        
         # Call Cashfree to verify order status via HTTP API
         headers = {
             "x-client-id": CASHFREE_CLIENT_ID,
@@ -608,13 +618,15 @@ async def verify_payment(order_id: str):
             new_status = PaymentStatus.FAILED.value
         
         if new_status != donation.get("status"):
-            await db.donations.update_one(
-                {"order_id": order_id},
-                {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            # Use findOneAndUpdate to prevent race conditions
+            result = await db.donations.find_one_and_update(
+                {"order_id": order_id, "status": PaymentStatus.PENDING.value},
+                {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}},
+                return_document=False
             )
             
-            # If payment successful, update collection amount
-            if new_status == PaymentStatus.SUCCESS.value:
+            # Only update collection if we actually changed the status (result is not None)
+            if result and new_status == PaymentStatus.SUCCESS.value:
                 await db.collections.update_one(
                     {"id": donation["collection_id"]},
                     {
@@ -622,7 +634,7 @@ async def verify_payment(order_id: str):
                         "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
                     }
                 )
-                logger.info(f"Payment successful for order {order_id}")
+                logger.info(f"Payment successful for order {order_id} (via verify)")
         
         return {
             "order_id": order_id,
