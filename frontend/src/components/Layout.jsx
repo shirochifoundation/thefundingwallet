@@ -97,6 +97,11 @@ export const Layout = ({ children }) => {
                     Start Collection
                   </Link>
                 </li>
+                <li>
+                  <Link to="/about" className="text-zinc-400 hover:text-white transition-colors">
+                    About Us
+                  </Link>
+                </li>
               </ul>
             </div>
 
