@@ -256,6 +256,8 @@ class CollectionResponse(BaseModel):
     category: str
     goal_amount: float
     current_amount: float
+    withdrawn_amount: float = 0.0
+    available_amount: float = 0.0
     visibility: str
     status: str
     deadline: Optional[str] = None
