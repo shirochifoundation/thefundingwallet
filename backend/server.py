@@ -114,11 +114,68 @@ class UserResponse(BaseModel):
     email: str
     phone: Optional[str] = None
     created_at: str
+    kyc_status: Optional[str] = "not_submitted"
+    is_admin: Optional[bool] = False
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+# ==================== KYC MODELS ====================
+class KYCSubmit(BaseModel):
+    pan_number: str
+    aadhaar_number: str
+    bank_account_number: Optional[str] = None
+    bank_ifsc: Optional[str] = None
+    bank_account_holder: Optional[str] = None
+    upi_id: Optional[str] = None
+
+class KYCResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    pan_number: str
+    aadhaar_last_four: str
+    bank_account_last_four: Optional[str] = None
+    bank_ifsc: Optional[str] = None
+    upi_id: Optional[str] = None
+    status: str
+    rejection_reason: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+# ==================== WITHDRAWAL MODELS ====================
+class WithdrawalRequest(BaseModel):
+    collection_id: str
+    amount: float
+    payout_mode: str  # "bank" or "upi"
+
+class WithdrawalResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    collection_id: str
+    amount: float
+    platform_fee: float
+    net_amount: float
+    payout_mode: str
+    status: str
+    cf_transfer_id: Optional[str] = None
+    failure_reason: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+# ==================== ADMIN MODELS ====================
+class PlatformSettings(BaseModel):
+    platform_fee_percentage: float = 2.5
+
+class KYCReview(BaseModel):
+    status: str  # "approved" or "rejected"
+    rejection_reason: Optional[str] = None
 
 
 # ==================== AUTH HELPER FUNCTIONS ====================
