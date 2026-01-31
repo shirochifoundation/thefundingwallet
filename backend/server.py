@@ -33,6 +33,15 @@ CASHFREE_SECRET_KEY = os.environ.get('CASHFREE_SECRET_KEY')
 CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
 CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/pg"
 
+# Cashfree Payout configuration
+CASHFREE_PAYOUT_CLIENT_ID = os.environ.get('CASHFREE_PAYOUT_CLIENT_ID')
+CASHFREE_PAYOUT_SECRET_KEY = os.environ.get('CASHFREE_PAYOUT_SECRET_KEY')
+CASHFREE_PAYOUT_BASE_URL = "https://payout-gamma.cashfree.com" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://payout-api.cashfree.com"
+
+# Admin credentials (for demo - in production use proper auth)
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@fundflow.com')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'fundflow-secret-key-change-in-production-2026')
 ALGORITHM = "HS256"
