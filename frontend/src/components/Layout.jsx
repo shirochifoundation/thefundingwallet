@@ -39,6 +39,13 @@ export const Layout = ({ children }) => {
               >
                 Browse Collections
               </Link>
+              <Link 
+                to="/about" 
+                className={`text-sm font-medium transition-colors ${isActive('/about') ? 'text-[#0a0a0a]' : 'text-[#52525b] hover:text-[#0a0a0a]'}`}
+                data-testid="nav-about"
+              >
+                About Us
+              </Link>
             </nav>
 
             {/* CTA Button */}
