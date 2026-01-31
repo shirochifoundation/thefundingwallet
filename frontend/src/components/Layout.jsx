@@ -1,11 +1,26 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, PlusCircle, Wallet } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Home, Search, PlusCircle, Wallet, User, LogOut, LogIn } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -48,13 +63,60 @@ export const Layout = ({ children }) => {
               </Link>
             </nav>
 
-            {/* CTA Button */}
-            <Link to="/create" data-testid="create-collection-btn">
-              <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Start Collection
-              </Button>
-            </Link>
+            {/* Right Side - Auth & CTA */}
+            <div className="flex items-center gap-3">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/create" data-testid="create-collection-btn">
+                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Start Collection
+                    </Button>
+                  </Link>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="rounded-full w-10 h-10 p-0 border-zinc-200"
+                        data-testid="user-menu-btn"
+                      >
+                        <User className="w-5 h-5 text-zinc-600" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-3 py-2">
+                        <p className="font-medium text-[#0a0a0a]">{user?.name}</p>
+                        <p className="text-sm text-zinc-500 truncate">{user?.email}</p>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleLogout}
+                        className="text-red-600 cursor-pointer"
+                        data-testid="logout-btn"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" data-testid="login-btn">
+                    <Button variant="ghost" className="rounded-full px-4 text-zinc-600 hover:text-[#0a0a0a]">
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/register" data-testid="register-btn">
+                    <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -142,14 +204,25 @@ export const Layout = ({ children }) => {
             <Search className="w-5 h-5" />
             <span className="text-xs mt-1">Browse</span>
           </Link>
-          <Link 
-            to="/create" 
-            className={`flex flex-col items-center p-2 ${isActive('/create') ? 'text-[#FF5F00]' : 'text-zinc-500'}`}
-            data-testid="mobile-nav-create"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span className="text-xs mt-1">Create</span>
-          </Link>
+          {isAuthenticated ? (
+            <Link 
+              to="/create" 
+              className={`flex flex-col items-center p-2 ${isActive('/create') ? 'text-[#FF5F00]' : 'text-zinc-500'}`}
+              data-testid="mobile-nav-create"
+            >
+              <PlusCircle className="w-5 h-5" />
+              <span className="text-xs mt-1">Create</span>
+            </Link>
+          ) : (
+            <Link 
+              to="/login" 
+              className={`flex flex-col items-center p-2 ${isActive('/login') ? 'text-[#FF5F00]' : 'text-zinc-500'}`}
+              data-testid="mobile-nav-login"
+            >
+              <User className="w-5 h-5" />
+              <span className="text-xs mt-1">Login</span>
+            </Link>
+          )}
         </div>
       </nav>
     </div>
