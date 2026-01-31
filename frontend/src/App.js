@@ -11,6 +11,7 @@ import PaymentCallback from "@/pages/PaymentCallback";
 import AboutPage from "@/pages/AboutPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import MyCollectionsPage from "@/pages/MyCollectionsPage";
 import { Loader2 } from "lucide-react";
 
 // Protected Route component
@@ -26,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: { pathname: "/create" } }} replace />;
+    return <Navigate to="/login" state={{ from: { pathname: window.location.pathname } }} replace />;
   }
   
   return children;
@@ -44,6 +45,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <CreateCollection />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/my-collections" 
+          element={
+            <ProtectedRoute>
+              <MyCollectionsPage />
             </ProtectedRoute>
           } 
         />
