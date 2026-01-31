@@ -288,6 +288,63 @@ class FundFlowAPITester:
         except Exception as e:
             self.log_test("Collections Requires Auth", False, str(e))
             return False
+
+    def test_create_collection(self):
+        """Test POST /api/collections endpoint (with authentication)"""
+        if not self.test_token:
+            self.log_test("Create Collection", False, "No authentication token available")
+            return False
+            
+        try:
+            test_data = {
+                "title": f"Test Collection {datetime.now().strftime('%H%M%S')}",
+                "description": "This is a test collection created by automated testing script.",
+                "category": "celebration",
+                "goal_amount": 5000.0,
+                "visibility": "public",
+                "deadline": (datetime.now() + timedelta(days=30)).isoformat(),
+                "organizer_name": "Test Organizer",
+                "organizer_email": "test@example.com",
+                "organizer_phone": "9876543210"
+            }
+            
+            headers = {
+                'Authorization': f'Bearer {self.test_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/collections", 
+                json=test_data,
+                headers=headers,
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                self.test_collection_id = data.get('id')
+                details += f", Collection ID: {self.test_collection_id}"
+                # Verify required fields in response
+                required_fields = ['id', 'title', 'description', 'category', 'goal_amount', 'current_amount', 'organizer_name']
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    success = False
+                    details += f", Missing response fields: {missing_fields}"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data.get('detail', 'Unknown error')}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                    
+            self.log_test("Create Collection (Authenticated)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Create Collection (Authenticated)", False, str(e))
+            return False
         """Test POST /api/collections endpoint"""
         try:
             test_data = {
