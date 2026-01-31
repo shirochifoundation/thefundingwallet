@@ -227,6 +227,13 @@ async def get_required_user(credentials: HTTPAuthorizationCredentials = Depends(
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Get current user and verify they are admin"""
+    user = await get_required_user(credentials)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
 
 # ==================== MODELS ====================
 class CollectionCreate(BaseModel):
