@@ -112,20 +112,30 @@ export default function CollectionDetails() {
         anonymous: anonymous
       });
 
-      const { payment_session_id, cf_order_id } = response.data;
+      const { payment_session_id, cf_order_id, order_id } = response.data;
       
       // Initialize Cashfree checkout
       if (window.Cashfree) {
-        const cashfree = window.Cashfree({ mode: "sandbox" });
-        await cashfree.checkout({
-          paymentSessionId: payment_session_id,
-          redirectTarget: "_self"
-        });
+        try {
+          const cashfree = window.Cashfree({ mode: "sandbox" });
+          const checkoutOptions = {
+            paymentSessionId: payment_session_id,
+            redirectTarget: "_self"
+          };
+          await cashfree.checkout(checkoutOptions);
+        } catch (checkoutError) {
+          console.error("Cashfree checkout error:", checkoutError);
+          // Fallback to direct redirect
+          toast.info("Opening payment page...");
+          window.location.href = `/payment/callback?order_id=${order_id}`;
+        }
       } else {
-        // Fallback: redirect to payment callback with order info
-        toast.info("Redirecting to payment...");
-        // For testing, simulate success
-        window.location.href = `/payment/callback?order_id=${response.data.order_id}`;
+        // SDK not loaded, show toast and redirect to callback
+        toast.info("Payment gateway loading... Redirecting...");
+        // Give user a moment then redirect
+        setTimeout(() => {
+          window.location.href = `/payment/callback?order_id=${order_id}`;
+        }, 1500);
       }
     } catch (error) {
       console.error("Error creating payment:", error);
