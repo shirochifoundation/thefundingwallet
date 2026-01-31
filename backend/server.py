@@ -293,47 +293,57 @@ async def create_payment_order(payment: PaymentOrderCreate):
         order_id = f"order_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc).isoformat()
         
-        # Create customer details for Cashfree
-        customer_details = CustomerDetails(
-            customer_id=f"donor_{uuid.uuid4().hex[:8]}",
-            customer_name=payment.donor_name,
-            customer_email=payment.donor_email,
-            customer_phone=payment.donor_phone
-        )
-        
-        # Create order meta with return URL
+        # Create order via Cashfree HTTP API
         base_url = os.environ.get('API_BASE_URL', 'http://localhost:3000')
-        order_meta = OrderMeta(
-            return_url=f"{base_url}/payment/callback?order_id={order_id}",
-            notify_url=f"{os.environ.get('WEBHOOK_URL', base_url)}/api/webhooks/payment"
-        )
         
-        # Create order request
-        create_order_request = CreateOrderRequest(
-            order_id=order_id,
-            order_amount=payment.amount,
-            order_currency="INR",
-            customer_details=customer_details,
-            order_meta=order_meta
-        )
+        order_payload = {
+            "order_id": order_id,
+            "order_amount": payment.amount,
+            "order_currency": "INR",
+            "customer_details": {
+                "customer_id": f"donor_{uuid.uuid4().hex[:8]}",
+                "customer_name": payment.donor_name,
+                "customer_email": payment.donor_email,
+                "customer_phone": payment.donor_phone
+            },
+            "order_meta": {
+                "return_url": f"{base_url}/payment/callback?order_id={order_id}",
+                "notify_url": f"{os.environ.get('WEBHOOK_URL', base_url)}/api/webhooks/payment"
+            }
+        }
         
-        # Call Cashfree API
-        api_version = "2023-08-01"
-        cashfree_api = Cashfree()
-        response = cashfree_api.PGCreateOrder(api_version, create_order_request, None, None)
+        headers = {
+            "Content-Type": "application/json",
+            "x-client-id": CASHFREE_CLIENT_ID,
+            "x-client-secret": CASHFREE_SECRET_KEY,
+            "x-api-version": "2023-08-01"
+        }
         
-        if not response or not response.data:
-            logger.error(f"Cashfree order creation failed")
-            raise HTTPException(status_code=400, detail="Failed to create payment order")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{CASHFREE_BASE_URL}/orders",
+                json=order_payload,
+                headers=headers
+            ) as resp:
+                cf_response = await resp.json()
+                
+                if resp.status != 200:
+                    logger.error(f"Cashfree order creation failed: {cf_response}")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=cf_response.get("message", "Failed to create payment order")
+                    )
         
-        cf_order = response.data
+        cf_order_id = cf_response.get("cf_order_id")
+        payment_session_id = cf_response.get("payment_session_id")
+        order_status = cf_response.get("order_status")
         
         # Store donation record (pending)
         donation_doc = {
             "id": str(uuid.uuid4()),
             "collection_id": payment.collection_id,
             "order_id": order_id,
-            "cf_order_id": cf_order.cf_order_id,
+            "cf_order_id": cf_order_id,
             "donor_name": payment.donor_name,
             "donor_email": payment.donor_email,
             "donor_phone": payment.donor_phone,
@@ -341,7 +351,7 @@ async def create_payment_order(payment: PaymentOrderCreate):
             "message": payment.message,
             "anonymous": payment.anonymous,
             "status": PaymentStatus.PENDING.value,
-            "payment_session_id": cf_order.payment_session_id,
+            "payment_session_id": payment_session_id,
             "created_at": now,
             "updated_at": now
         }
@@ -351,9 +361,9 @@ async def create_payment_order(payment: PaymentOrderCreate):
         
         return PaymentOrderResponse(
             order_id=order_id,
-            cf_order_id=cf_order.cf_order_id,
-            payment_session_id=cf_order.payment_session_id,
-            order_status=cf_order.order_status
+            cf_order_id=cf_order_id,
+            payment_session_id=payment_session_id,
+            order_status=order_status
         )
         
     except HTTPException:
