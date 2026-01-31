@@ -120,26 +120,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right - Stats Cards */}
-            <div className="grid grid-cols-2 gap-4 animate-fade-in stagger-2">
-              <div className="stats-card col-span-2">
-                <p className="text-blue-200 text-sm mb-1">Total Funds Raised</p>
-                <p className="text-4xl md:text-5xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
-                  {formatCurrency(stats.total_raised)}
-                </p>
-              </div>
-              <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                <p className="text-zinc-500 text-sm mb-1">Active Collections</p>
-                <p className="text-3xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
-                  {stats.total_collections}
-                </p>
-              </div>
-              <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                <p className="text-zinc-500 text-sm mb-1">Total Donations</p>
-                <p className="text-3xl font-bold text-[#0a0a0a]" style={{ fontFamily: 'Bricolage Grotesque' }}>
-                  {stats.total_donations}
-                </p>
-              </div>
+            {/* Right - Hero Image */}
+            <div className="hidden lg:block animate-fade-in stagger-2">
+              <img 
+                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"
+                alt="Friends celebrating together"
+                className="rounded-3xl shadow-2xl w-full object-cover aspect-[4/3]"
+              />
             </div>
           </div>
         </div>
