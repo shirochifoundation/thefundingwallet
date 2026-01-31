@@ -454,6 +454,24 @@ async def get_categories():
         ]
     }
 
+@api_router.get("/my-collections", response_model=List[CollectionResponse])
+async def get_my_collections(
+    current_user: dict = Depends(get_required_user),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100)
+):
+    """Get collections created by the current user"""
+    try:
+        cursor = db.collections.find(
+            {"user_id": current_user["id"]}, 
+            {"_id": 0}
+        ).skip(skip).limit(limit).sort("created_at", -1)
+        collections = await cursor.to_list(length=limit)
+        return [CollectionResponse(**c) for c in collections]
+    except Exception as e:
+        logger.error(f"Error fetching user collections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ==================== PAYMENT ENDPOINTS ====================
 @api_router.post("/payments/create-order", response_model=PaymentOrderResponse)
