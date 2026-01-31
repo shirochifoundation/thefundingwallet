@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,28 +20,63 @@ export default function PaymentCallback() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState("loading");
   const [paymentData, setPaymentData] = useState(null);
+  const retryCount = useRef(0);
+  const maxRetries = 10;
 
   const orderId = searchParams.get("order_id");
+  // Cashfree may also send order_status directly in query params
+  const cfOrderStatus = searchParams.get("order_status");
 
   useEffect(() => {
     if (orderId) {
-      verifyPayment();
+      // If Cashfree already sent the status in URL, use it
+      if (cfOrderStatus === "PAID") {
+        // Still verify with backend to update database
+        verifyPayment(true);
+      } else if (cfOrderStatus === "FAILED" || cfOrderStatus === "CANCELLED") {
+        setStatus("failed");
+        fetchOrderDetails();
+      } else {
+        verifyPayment();
+      }
     } else {
       setStatus("error");
     }
   }, [orderId]);
 
-  const verifyPayment = async () => {
+  const fetchOrderDetails = async () => {
+    try {
+      const response = await axios.get(`${API}/payments/verify/${orderId}`);
+      setPaymentData(response.data);
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+    }
+  };
+
+  const verifyPayment = async (expectSuccess = false) => {
     try {
       const response = await axios.get(`${API}/payments/verify/${orderId}`);
       setPaymentData(response.data);
       
       if (response.data.status === "success") {
         setStatus("success");
+      } else if (response.data.status === "failed") {
+        setStatus("failed");
       } else if (response.data.status === "pending") {
-        setStatus("pending");
-        // Retry after a few seconds
-        setTimeout(verifyPayment, 3000);
+        // If we expect success (Cashfree said PAID), keep retrying a bit more
+        if (expectSuccess && retryCount.current < maxRetries) {
+          retryCount.current += 1;
+          setStatus("pending");
+          setTimeout(() => verifyPayment(true), 2000);
+        } else if (retryCount.current < maxRetries) {
+          retryCount.current += 1;
+          setStatus("pending");
+          // Retry after a few seconds, up to max retries
+          setTimeout(verifyPayment, 3000);
+        } else {
+          // Max retries reached, show pending with manual options
+          setStatus("pending_timeout");
+        }
       } else {
         setStatus("failed");
       }
@@ -104,6 +139,56 @@ export default function PaymentCallback() {
               <p className="text-zinc-500 mb-6">
                 Your payment is being processed. This may take a moment...
               </p>
+            </div>
+          )}
+
+          {/* Pending Timeout State - show after max retries */}
+          {status === "pending_timeout" && (
+            <div className="animate-fade-in">
+              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
+                <Loader2 className="w-10 h-10 text-amber-600" />
+              </div>
+              <h1 
+                className="text-2xl font-bold text-[#0a0a0a] mb-3"
+                style={{ fontFamily: 'Bricolage Grotesque' }}
+              >
+                Payment Pending
+              </h1>
+              <p className="text-zinc-500 mb-6">
+                Your payment is still being processed. Please check back in a few minutes or contact support if the amount was deducted.
+              </p>
+              <div className="space-y-3">
+                {paymentData?.collection_id && (
+                  <Link to={`/collection/${paymentData.collection_id}`}>
+                    <Button 
+                      className="w-full bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full py-6 font-semibold"
+                    >
+                      View Collection
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                )}
+                <Button 
+                  variant="outline"
+                  className="w-full rounded-full py-6 border-zinc-200"
+                  onClick={() => {
+                    retryCount.current = 0;
+                    setStatus("loading");
+                    verifyPayment();
+                  }}
+                >
+                  Check Again
+                </Button>
+                <Link to="/">
+                  <Button 
+                    variant="ghost"
+                    className="w-full rounded-full py-6"
+                  >
+                    <Home className="w-5 h-5 mr-2" />
+                    Back to Home
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 
