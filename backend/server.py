@@ -406,6 +406,9 @@ async def login(credentials: UserLogin):
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_required_user)):
     """Get current logged in user"""
+    # Ensure kyc_status is included
+    current_user["kyc_status"] = current_user.get("kyc_status", "not_submitted")
+    current_user["is_admin"] = current_user.get("is_admin", False)
     return UserResponse(**current_user)
 
 
