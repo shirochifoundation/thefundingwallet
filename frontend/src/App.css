@@ -1,34 +1,219 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* FundFlow App Styles */
+
+/* Layout utilities */
+.container-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
+@media (min-width: 768px) {
+    .container-main {
+        padding: 0 3rem;
     }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
+@media (min-width: 1024px) {
+    .container-main {
+        padding: 0 5rem;
+    }
+}
+
+/* Hero section */
+.hero-gradient {
+    background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 50%, #f5f5f7 100%);
+}
+
+/* Progress bar animation */
+.progress-bar {
+    transition: width 1s ease-out;
+}
+
+/* Category badge colors */
+.badge-celebration { background-color: #fef3c7; color: #92400e; }
+.badge-medical { background-color: #fee2e2; color: #991b1b; }
+.badge-festival { background-color: #fce7f3; color: #9d174d; }
+.badge-society { background-color: #dbeafe; color: #1e40af; }
+.badge-social { background-color: #d1fae5; color: #065f46; }
+.badge-office { background-color: #e0e7ff; color: #3730a3; }
+.badge-reunion { background-color: #fef9c3; color: #854d0e; }
+.badge-other { background-color: #f3f4f6; color: #374151; }
+
+/* Button styles */
+.btn-primary {
+    background-color: #FF5F00;
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: #E05400;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 95, 0, 0.3);
+}
+
+.btn-secondary {
+    background-color: #002FA7;
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #002585;
+    transform: translateY(-1px);
+}
+
+/* Input styles */
+.input-styled {
+    background-color: #f5f5f7;
+    border: 2px solid transparent;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-styled:focus {
+    border-color: #002FA7;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(0, 47, 167, 0.1);
+    outline: none;
+}
+
+/* Card styles */
+.collection-card {
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.collection-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Tab styles */
+.tab-active {
+    border-bottom: 3px solid #FF5F00;
+    color: #0a0a0a;
+    font-weight: 600;
+}
+
+.tab-inactive {
+    border-bottom: 3px solid transparent;
+    color: #52525b;
+}
+
+.tab-inactive:hover {
+    color: #0a0a0a;
+}
+
+/* Stats card */
+.stats-card {
+    background: linear-gradient(135deg, #002FA7 0%, #0047d6 100%);
+    color: white;
+    border-radius: 1.5rem;
+    padding: 2rem;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #FF5F00;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #71717a;
+}
+
+/* Toast customization */
+[data-sonner-toast] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Donor list item */
+.donor-item {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f4f4f5;
+    transition: background-color 0.2s ease;
+}
+
+.donor-item:hover {
+    background-color: #fafafa;
+}
+
+.donor-item:last-child {
+    border-bottom: none;
+}
+
+/* Amount display */
+.amount-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+}
+
+/* Category icon wrapper */
+.category-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
 }
 
-.App-link {
-    color: #61dafb;
+/* Share link input */
+.share-link-input {
+    background-color: #f5f5f7;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    color: #52525b;
+    border: 1px solid #e4e4e7;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
+/* Mobile bottom nav */
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e4e4e7;
+        padding: 0.5rem;
+        z-index: 50;
     }
-    to {
-        transform: rotate(360deg);
-    }
+}
+
+/* Hide scrollbar for specific elements */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
