@@ -88,7 +88,206 @@ class FundFlowAPITester:
             self.log_test("Get Platform Stats", False, str(e))
             return False
 
-    def test_create_collection(self):
+    def test_user_registration(self):
+        """Test POST /api/auth/register endpoint"""
+        try:
+            # Generate unique test user
+            timestamp = datetime.now().strftime('%H%M%S')
+            test_data = {
+                "name": f"Test User {timestamp}",
+                "email": f"testuser{timestamp}@example.com",
+                "password": "testpass123",
+                "phone": "9876543210"
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/auth/register",
+                json=test_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                self.test_token = data.get('access_token')
+                user_data = data.get('user', {})
+                self.test_user_id = user_data.get('id')
+                
+                # Verify required fields in response
+                required_fields = ['access_token', 'token_type', 'user']
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    success = False
+                    details += f", Missing response fields: {missing_fields}"
+                else:
+                    details += f", User ID: {self.test_user_id}, Token received: {'Yes' if self.test_token else 'No'}"
+                    
+                # Verify user object structure
+                user_required_fields = ['id', 'name', 'email']
+                user_missing_fields = [field for field in user_required_fields if field not in user_data]
+                if user_missing_fields:
+                    success = False
+                    details += f", Missing user fields: {user_missing_fields}"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data.get('detail', 'Unknown error')}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                    
+            self.log_test("User Registration", success, details)
+            return success
+        except Exception as e:
+            self.log_test("User Registration", False, str(e))
+            return False
+
+    def test_user_login(self):
+        """Test POST /api/auth/login endpoint"""
+        try:
+            # Use existing test user or create a new one
+            if not hasattr(self, 'test_email'):
+                timestamp = datetime.now().strftime('%H%M%S')
+                self.test_email = f"logintest{timestamp}@example.com"
+                self.test_password = "testpass123"
+                
+                # First register a user to login with
+                register_data = {
+                    "name": f"Login Test User {timestamp}",
+                    "email": self.test_email,
+                    "password": self.test_password
+                }
+                
+                register_response = requests.post(
+                    f"{self.api_url}/auth/register",
+                    json=register_data,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=10
+                )
+                
+                if register_response.status_code != 200:
+                    self.log_test("User Login (Setup)", False, "Failed to create test user for login")
+                    return False
+            
+            # Now test login
+            login_data = {
+                "email": self.test_email,
+                "password": self.test_password
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/auth/login",
+                json=login_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                self.test_token = data.get('access_token')  # Update token for subsequent tests
+                user_data = data.get('user', {})
+                
+                # Verify required fields in response
+                required_fields = ['access_token', 'token_type', 'user']
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    success = False
+                    details += f", Missing response fields: {missing_fields}"
+                else:
+                    details += f", Email: {user_data.get('email')}, Token received: {'Yes' if self.test_token else 'No'}"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data.get('detail', 'Unknown error')}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                    
+            self.log_test("User Login", success, details)
+            return success
+        except Exception as e:
+            self.log_test("User Login", False, str(e))
+            return False
+
+    def test_get_current_user(self):
+        """Test GET /api/auth/me endpoint (requires authentication)"""
+        if not self.test_token:
+            self.log_test("Get Current User", False, "No authentication token available")
+            return False
+            
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.test_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.get(f"{self.api_url}/auth/me", headers=headers, timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                required_fields = ['id', 'name', 'email', 'created_at']
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    success = False
+                    details += f", Missing fields: {missing_fields}"
+                else:
+                    details += f", User: {data.get('name')} ({data.get('email')})"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data.get('detail', 'Unknown error')}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                    
+            self.log_test("Get Current User", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Current User", False, str(e))
+            return False
+
+    def test_collections_requires_auth(self):
+        """Test POST /api/collections endpoint requires authentication (should return 401 without token)"""
+        try:
+            test_data = {
+                "title": "Test Collection - No Auth",
+                "description": "This should fail without authentication",
+                "category": "celebration",
+                "goal_amount": 1000.0,
+                "organizer_name": "Test Organizer",
+                "organizer_email": "test@example.com"
+            }
+            
+            # Test without authentication token
+            response = requests.post(
+                f"{self.api_url}/collections", 
+                json=test_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 401
+            details = f"Status: {response.status_code} (Expected: 401)"
+            
+            if success:
+                details += ", Correctly rejected unauthenticated request"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Unexpected response: {error_data}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                    
+            self.log_test("Collections Requires Auth", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Collections Requires Auth", False, str(e))
+            return False
         """Test POST /api/collections endpoint"""
         try:
             test_data = {
