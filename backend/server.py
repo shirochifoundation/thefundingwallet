@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Query, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,13 +9,15 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 import hashlib
 import hmac
 import base64
 import json
 import aiohttp
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -29,6 +32,17 @@ CASHFREE_CLIENT_ID = os.environ.get('CASHFREE_CLIENT_ID')
 CASHFREE_SECRET_KEY = os.environ.get('CASHFREE_SECRET_KEY')
 CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
 CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/pg"
+
+# JWT Configuration
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'fundflow-secret-key-change-in-production-2026')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Security
+security = HTTPBearer(auto_error=False)
 
 # Create the main app
 app = FastAPI(title="FundFlow API", version="1.0.0")
