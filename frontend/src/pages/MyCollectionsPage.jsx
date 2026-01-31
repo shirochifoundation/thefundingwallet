@@ -182,108 +182,114 @@ export default function MyCollectionsPage() {
               const badgeClass = categoryColors[collection.category?.toLowerCase()] || categoryColors.other;
               
               return (
-                <div 
+                <Link 
+                  to={`/collection/${collection.id}`}
                   key={collection.id}
-                  className="bg-white border border-zinc-200 rounded-2xl p-6 hover:shadow-md transition-shadow animate-fade-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  className="block"
                   data-testid={`collection-item-${collection.id}`}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Image */}
-                    <div className="w-full lg:w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
-                      <img 
-                        src={collection.cover_image}
-                        alt={collection.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge className={`${badgeClass} rounded-full px-3 py-1 text-xs font-semibold`}>
-                              {collection.category}
-                            </Badge>
-                            {collection.visibility === 'private' ? (
-                              <Badge className="bg-zinc-100 text-zinc-600 rounded-full px-2 py-1 text-xs">
-                                <Lock className="w-3 h-3 mr-1" /> Private
+                  <div 
+                    className="bg-white border border-zinc-200 rounded-2xl p-6 hover:shadow-md hover:border-zinc-300 transition-all cursor-pointer animate-fade-in"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                      {/* Image */}
+                      <div className="w-full lg:w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                        <img 
+                          src={collection.cover_image}
+                          alt={collection.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge className={`${badgeClass} rounded-full px-3 py-1 text-xs font-semibold`}>
+                                {collection.category}
                               </Badge>
-                            ) : (
-                              <Badge className="bg-zinc-100 text-zinc-600 rounded-full px-2 py-1 text-xs">
-                                <Globe className="w-3 h-3 mr-1" /> Public
-                              </Badge>
-                            )}
-                          </div>
-                          <Link to={`/collection/${collection.id}`}>
+                              {collection.visibility === 'private' ? (
+                                <Badge className="bg-zinc-100 text-zinc-600 rounded-full px-2 py-1 text-xs">
+                                  <Lock className="w-3 h-3 mr-1" /> Private
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-zinc-100 text-zinc-600 rounded-full px-2 py-1 text-xs">
+                                  <Globe className="w-3 h-3 mr-1" /> Public
+                                </Badge>
+                              )}
+                            </div>
                             <h3 
-                              className="text-lg font-bold text-[#0a0a0a] hover:text-[#002FA7] transition-colors truncate"
+                              className="text-lg font-bold text-[#0a0a0a] group-hover:text-[#002FA7] transition-colors truncate"
                               style={{ fontFamily: 'Bricolage Grotesque' }}
                             >
                               {collection.title}
                             </h3>
-                          </Link>
-                          <p className="text-sm text-zinc-500 mt-1">
-                            Created {formatDate(collection.created_at)}
-                          </p>
-                        </div>
-                        
-                        {/* Actions */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="flex-shrink-0">
-                              <MoreVertical className="w-5 h-5 text-zinc-500" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link to={`/collection/${collection.id}`} className="cursor-pointer">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => copyShareLink(collection.id)}
-                              className="cursor-pointer"
-                            >
-                              <Share2 className="w-4 h-4 mr-2" />
-                              Share Link
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      
-                      {/* Progress Section */}
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="sm:col-span-2">
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="font-semibold text-[#0a0a0a]">
-                              {formatAmount(collection.current_amount)}
-                            </span>
-                            <span className="text-zinc-500">
-                              of {formatAmount(collection.goal_amount)}
-                            </span>
+                            <p className="text-sm text-zinc-500 mt-1">
+                              Created {formatDate(collection.created_at)}
+                            </p>
                           </div>
-                          <Progress value={progress} className="h-2 bg-zinc-100" />
-                          <p className="text-xs text-zinc-500 mt-1">{progress.toFixed(0)}% raised</p>
+                          
+                          {/* Actions */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                              <Button variant="ghost" size="icon" className="flex-shrink-0">
+                                <MoreVertical className="w-5 h-5 text-zinc-500" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/collection/${collection.id}`} className="cursor-pointer">
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  copyShareLink(collection.id);
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Share Link
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                         
-                        <div className="flex items-center gap-2 text-zinc-600">
-                          <Users className="w-4 h-4" />
-                          <span className="text-sm">{collection.donor_count} donors</span>
-                        </div>
-                        
-                        {collection.deadline && (
+                        {/* Progress Section */}
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="sm:col-span-2">
+                            <div className="flex justify-between text-sm mb-2">
+                              <span className="font-semibold text-[#0a0a0a]">
+                                {formatAmount(collection.current_amount)}
+                              </span>
+                              <span className="text-zinc-500">
+                                of {formatAmount(collection.goal_amount)}
+                              </span>
+                            </div>
+                            <Progress value={progress} className="h-2 bg-zinc-100" />
+                            <p className="text-xs text-zinc-500 mt-1">{progress.toFixed(0)}% raised</p>
+                          </div>
+                          
                           <div className="flex items-center gap-2 text-zinc-600">
-                            <Calendar className="w-4 h-4" />
-                            <span className="text-sm">{formatDate(collection.deadline)}</span>
+                            <Users className="w-4 h-4" />
+                            <span className="text-sm">{collection.donor_count} donors</span>
                           </div>
-                        )}
+                          
+                          {collection.deadline && (
+                            <div className="flex items-center gap-2 text-zinc-600">
+                              <Calendar className="w-4 h-4" />
+                              <span className="text-sm">{formatDate(collection.deadline)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
