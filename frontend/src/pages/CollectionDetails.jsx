@@ -49,13 +49,22 @@ export default function CollectionDetails() {
   const [donationLoading, setDonationLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Donation form state
+  // Donation form state - pre-populate with logged in user data
   const [donorName, setDonorName] = useState("");
   const [donorEmail, setDonorEmail] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
+
+  // Pre-populate form with user data when user is logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setDonorName(user.name || "");
+      setDonorEmail(user.email || "");
+      setDonorPhone(user.phone || "");
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     fetchCollection();
