@@ -1085,7 +1085,7 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
         
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                f"{CASHFREE_PAYOUT_V2_BASE_URL}/transfers",
+                f"{CASHFREE_PAYOUT_BASE_URL}/transfers",
                 json=transfer_data,
                 headers=headers
             ) as resp:
