@@ -937,8 +937,8 @@ CASHFREE_FUNDSOURCE_ID = os.environ.get('CASHFREE_FUNDSOURCE_ID', 'CASHFREE_4221
 CASHFREE_PAYOUT_V2_BASE_URL = "https://sandbox.cashfree.com/payout"
 
 
-async def get_or_create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phone: str, payout_mode: str, kyc: dict):
-    """Get or create beneficiary using Cashfree V2 API"""
+async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phone: str, payout_mode: str, kyc: dict):
+    """Create beneficiary using Cashfree V2 API"""
     try:
         headers = {
             "Content-Type": "application/json",
@@ -947,17 +947,7 @@ async def get_or_create_beneficiary_v2(beneficiary_id: str, name: str, email: st
             "x-api-version": "2024-01-01"
         }
         
-        # First check if beneficiary exists
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary/{beneficiary_id}",
-                headers=headers
-            ) as resp:
-                if resp.status == 200:
-                    logger.info(f"Beneficiary {beneficiary_id} already exists")
-                    return beneficiary_id, None
-        
-        # Create new beneficiary using V2 endpoint (/payout/beneficiary - singular)
+        # Create beneficiary using V2 endpoint (/payout/beneficiary - singular)
         beneficiary_data = {
             "beneficiary_id": beneficiary_id,
             "beneficiary_name": name or "User",
@@ -986,6 +976,7 @@ async def get_or_create_beneficiary_v2(beneficiary_id: str, name: str, email: st
                 if resp.status in [200, 201] or result.get("beneficiary_status") == "VERIFIED":
                     return beneficiary_id, None
                 elif "already" in str(result).lower() or "conflict" in str(result.get("code", "")).lower():
+                    # Beneficiary already exists in V2, that's fine
                     return beneficiary_id, None
                 else:
                     error_msg = result.get("message") or result.get("status_description") or "Failed to create beneficiary"
