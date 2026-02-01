@@ -933,9 +933,8 @@ async def get_kyc_status(current_user: dict = Depends(get_required_user)):
 # ==================== WITHDRAWAL ENDPOINTS ====================
 
 # Cashfree Payout Fund Source ID
+# Cashfree Payout Fund Source ID
 CASHFREE_FUNDSOURCE_ID = os.environ.get('CASHFREE_FUNDSOURCE_ID', 'CASHFREE_422178')
-# Use sandbox URL for testing
-CASHFREE_PAYOUT_V2_BASE_URL = "https://sandbox.cashfree.com/payout"
 
 
 async def get_existing_beneficiary_v2(bank_account: str = None, bank_ifsc: str = None, vpa: str = None):
