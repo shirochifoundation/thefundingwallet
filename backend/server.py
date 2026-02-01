@@ -949,9 +949,9 @@ async def get_existing_beneficiary_v2(bank_account: str = None, bank_ifsc: str =
         
         async with aiohttp.ClientSession() as session:
             if vpa:
-                url = f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary?vpa={vpa}"
+                url = f"{CASHFREE_PAYOUT_BASE_URL}/beneficiary?vpa={vpa}"
             else:
-                url = f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary?bank_account_number={bank_account}&bank_ifsc={bank_ifsc}"
+                url = f"{CASHFREE_PAYOUT_BASE_URL}/beneficiary?bank_account_number={bank_account}&bank_ifsc={bank_ifsc}"
             
             async with session.get(url, headers=headers) as resp:
                 if resp.status == 200:
