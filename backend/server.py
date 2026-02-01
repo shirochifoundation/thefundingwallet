@@ -930,6 +930,67 @@ async def get_kyc_status(current_user: dict = Depends(get_required_user)):
 
 
 # ==================== WITHDRAWAL ENDPOINTS ====================
+
+async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_mode: str, kyc: dict, beneficiary_name: str):
+    """Process payout via Cashfree Payouts API"""
+    try:
+        if not CASHFREE_PAYOUT_CLIENT_ID or not CASHFREE_PAYOUT_SECRET_KEY:
+            logger.warning("Cashfree Payout keys not configured, skipping actual payout")
+            return None, "Payout keys not configured"
+        
+        transfer_id = f"TRF_{withdrawal_id[:12]}"
+        
+        # Build beneficiary details based on payout mode
+        beneficiary_details = {
+            "beneficiary_id": f"BEN_{kyc['user_id'][:8]}_{payout_mode}",
+            "beneficiary_name": beneficiary_name or kyc.get("bank_account_holder", "Beneficiary")
+        }
+        
+        if payout_mode == "upi":
+            beneficiary_details["beneficiary_instrument_details"] = {
+                "vpa": kyc.get("upi_id")
+            }
+        else:  # bank transfer
+            beneficiary_details["beneficiary_instrument_details"] = {
+                "bank_account_number": kyc.get("bank_account_number"),
+                "bank_ifsc": kyc.get("bank_ifsc")
+            }
+        
+        transfer_payload = {
+            "transfer_id": transfer_id,
+            "transfer_amount": net_amount,
+            "transfer_mode": payout_mode if payout_mode == "upi" else "banktransfer",
+            "beneficiary_details": beneficiary_details
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
+            "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
+            "x-api-version": "2024-01-01"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{CASHFREE_PAYOUT_BASE_URL}/payout/transfers",
+                json=transfer_payload,
+                headers=headers
+            ) as resp:
+                cf_response = await resp.json()
+                logger.info(f"Cashfree Payout response for {transfer_id}: {cf_response}")
+                
+                if resp.status in [200, 201]:
+                    cf_transfer_id = cf_response.get("cf_transfer_id") or cf_response.get("data", {}).get("cf_transfer_id")
+                    return cf_transfer_id, None
+                else:
+                    error_msg = cf_response.get("message") or cf_response.get("error", {}).get("message", "Payout failed")
+                    return None, error_msg
+                    
+    except Exception as e:
+        logger.error(f"Cashfree Payout error: {str(e)}")
+        return None, str(e)
+
+
 @api_router.post("/withdrawals/request", response_model=WithdrawalResponse)
 async def request_withdrawal(request: WithdrawalRequest, current_user: dict = Depends(get_required_user)):
     """Request withdrawal of funds from a collection"""
@@ -977,6 +1038,28 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
         now = datetime.now(timezone.utc).isoformat()
         withdrawal_id = str(uuid.uuid4())
         
+        # Process payout via Cashfree
+        cf_transfer_id, payout_error = await process_cashfree_payout(
+            withdrawal_id=withdrawal_id,
+            net_amount=net_amount,
+            payout_mode=request.payout_mode,
+            kyc=kyc,
+            beneficiary_name=current_user.get("name")
+        )
+        
+        # Determine status based on payout result
+        if cf_transfer_id:
+            status = WithdrawalStatus.PROCESSING.value
+            failure_reason = None
+        elif payout_error:
+            # If payout fails, still create the record but mark as pending for manual processing
+            status = WithdrawalStatus.PENDING.value
+            failure_reason = f"Auto-payout failed: {payout_error}. Pending manual processing."
+            logger.warning(f"Auto-payout failed for {withdrawal_id}: {payout_error}")
+        else:
+            status = WithdrawalStatus.PENDING.value
+            failure_reason = None
+        
         withdrawal_doc = {
             "id": withdrawal_id,
             "user_id": current_user["id"],
@@ -985,25 +1068,22 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
             "platform_fee": platform_fee,
             "net_amount": net_amount,
             "payout_mode": request.payout_mode,
-            "status": WithdrawalStatus.PENDING.value,
-            "cf_transfer_id": None,
-            "failure_reason": None,
+            "status": status,
+            "cf_transfer_id": cf_transfer_id,
+            "failure_reason": failure_reason,
             "created_at": now,
             "updated_at": now
         }
         
         await db.withdrawals.insert_one(withdrawal_doc)
         
-        # Update collection's withdrawn amount (pending)
+        # Update collection's withdrawn amount
         await db.collections.update_one(
             {"id": request.collection_id},
             {"$inc": {"withdrawn_amount": request.amount}}
         )
         
-        logger.info(f"Withdrawal requested: {withdrawal_id} for ₹{request.amount}")
-        
-        # TODO: Process payout via Cashfree Payouts API when keys are available
-        # For now, mark as processing (admin will manually process or API will handle)
+        logger.info(f"Withdrawal requested: {withdrawal_id} for ₹{request.amount}, CF Transfer: {cf_transfer_id}")
         
         return WithdrawalResponse(**withdrawal_doc)
         
