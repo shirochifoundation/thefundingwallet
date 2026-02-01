@@ -1113,29 +1113,8 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
         now = datetime.now(timezone.utc).isoformat()
         withdrawal_id = str(uuid.uuid4())
         
-        # Process payout via Cashfree
-        cf_transfer_id, payout_error = await process_cashfree_payout(
-            withdrawal_id=withdrawal_id,
-            net_amount=net_amount,
-            payout_mode=request.payout_mode,
-            kyc=kyc,
-            beneficiary_name=current_user.get("name"),
-            user_id=current_user["id"]
-        )
-        
-        # Determine status based on payout result
-        if cf_transfer_id:
-            status = WithdrawalStatus.PROCESSING.value
-            failure_reason = None
-        elif payout_error:
-            # If payout fails, still create the record but mark as pending for manual processing
-            status = WithdrawalStatus.PENDING.value
-            failure_reason = f"Auto-payout failed: {payout_error}. Pending manual processing."
-            logger.warning(f"Auto-payout failed for {withdrawal_id}: {payout_error}")
-        else:
-            status = WithdrawalStatus.PENDING.value
-            failure_reason = None
-        
+        # Create withdrawal request with PENDING status (no Cashfree call yet)
+        # Payout will be initiated when admin approves
         withdrawal_doc = {
             "id": withdrawal_id,
             "user_id": current_user["id"],
@@ -1144,16 +1123,16 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
             "platform_fee": platform_fee,
             "net_amount": net_amount,
             "payout_mode": request.payout_mode,
-            "status": status,
-            "cf_transfer_id": cf_transfer_id,
-            "failure_reason": failure_reason,
+            "status": WithdrawalStatus.PENDING.value,
+            "cf_transfer_id": None,
+            "failure_reason": None,
             "created_at": now,
             "updated_at": now
         }
         
         await db.withdrawals.insert_one(withdrawal_doc)
         
-        # Update collection's withdrawn amount
+        # Reserve the amount (update collection's withdrawn amount)
         await db.collections.update_one(
             {"id": request.collection_id},
             {"$inc": {"withdrawn_amount": request.amount}}
