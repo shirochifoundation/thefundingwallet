@@ -501,19 +501,19 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full"
-                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "complete" })}
-                                data-testid={`complete-withdrawal-${withdrawal.id}`}
+                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "approve" })}
+                                data-testid={`approve-withdrawal-${withdrawal.id}`}
                               >
-                                <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
+                                <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="border-red-300 text-red-600 hover:bg-red-50 rounded-full"
-                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "fail" })}
-                                data-testid={`fail-withdrawal-${withdrawal.id}`}
+                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "reject" })}
+                                data-testid={`reject-withdrawal-${withdrawal.id}`}
                               >
-                                <XCircle className="w-4 h-4 mr-1" /> Fail
+                                <XCircle className="w-4 h-4 mr-1" /> Reject
                               </Button>
                             </div>
                           )}
