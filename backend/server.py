@@ -1035,6 +1035,9 @@ async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phon
                         return None, "Beneficiary conflict but could not find existing one"
                 else:
                     error_msg = result.get("message") or result.get("status_description") or "Failed to create beneficiary"
+                    # Provide user-friendly error for VBA/VPA
+                    if "VBA" in error_msg or "VPA" in error_msg or "cannot be added" in error_msg:
+                        error_msg = "The bank account or UPI ID in KYC is a Cashfree Virtual Account which cannot receive payouts. Please update KYC with a personal bank account."
                     return None, error_msg
                     
     except Exception as e:
