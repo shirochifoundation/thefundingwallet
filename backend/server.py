@@ -1199,7 +1199,7 @@ async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depen
         if not cf_transfer_id:
             return {"status": withdrawal["status"], "message": "No Cashfree transfer ID"}
         
-        # Query Cashfree for transfer status
+        # Query Cashfree for transfer status using V2 API
         headers = {
             "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
             "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
@@ -1207,14 +1207,13 @@ async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depen
         }
         
         async with aiohttp.ClientSession() as session:
-            transfer_id = f"TRF_{withdrawal_id[:12]}"
             async with session.get(
-                f"{CASHFREE_PAYOUT_BASE_URL}/payout/transfers/{transfer_id}",
+                f"{CASHFREE_PAYOUT_V2_BASE_URL}/transfers?cf_transfer_id={cf_transfer_id}",
                 headers=headers
             ) as resp:
                 if resp.status == 200:
                     cf_response = await resp.json()
-                    cf_status = cf_response.get("status") or cf_response.get("data", {}).get("status")
+                    cf_status = cf_response.get("status") or cf_response.get("status_code")
                     
                     # Map Cashfree status to our status
                     new_status = withdrawal["status"]
@@ -1222,7 +1221,7 @@ async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depen
                         new_status = WithdrawalStatus.COMPLETED.value
                     elif cf_status in ["FAILED", "REVERSED", "REJECTED"]:
                         new_status = WithdrawalStatus.FAILED.value
-                    elif cf_status in ["PENDING", "PROCESSING"]:
+                    elif cf_status in ["PENDING", "PROCESSING", "RECEIVED"]:
                         new_status = WithdrawalStatus.PROCESSING.value
                     
                     # Update if status changed
@@ -1239,7 +1238,7 @@ async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depen
                                 {"$inc": {"withdrawn_amount": -withdrawal["amount"]}}
                             )
                     
-                    return {"status": new_status, "cf_status": cf_status}
+                    return {"status": new_status, "cf_status": cf_status, "cf_description": cf_response.get("status_description")}
                 else:
                     return {"status": withdrawal["status"], "message": "Could not fetch status from Cashfree"}
                     
