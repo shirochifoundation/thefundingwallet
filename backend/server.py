@@ -1035,13 +1035,13 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
             logger.warning("Cashfree Payout keys not configured, skipping actual payout")
             return None, "Payout keys not configured"
         
-        # Create unique beneficiary ID for this withdrawal to avoid V1/V2 conflicts
-        beneficiary_id = f"BEN_{withdrawal_id[:8]}_{payout_mode}"
+        # Create unique beneficiary ID for this withdrawal
+        new_beneficiary_id = f"BEN_{withdrawal_id[:8]}_{payout_mode}"
         user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
         
-        # Always create a new V2 beneficiary
-        ben_id, ben_error = await create_beneficiary_v2(
-            beneficiary_id=beneficiary_id,
+        # Create V2 beneficiary (or get existing one if conflict)
+        beneficiary_id, ben_error = await create_beneficiary_v2(
+            beneficiary_id=new_beneficiary_id,
             name=beneficiary_name or kyc.get("bank_account_holder", "User"),
             email=user_doc.get("email") if user_doc else "user@example.com",
             phone=user_doc.get("phone") if user_doc else "9999999999",
@@ -1049,8 +1049,11 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
             kyc=kyc
         )
         
-        if ben_error and "already" not in ben_error.lower() and "conflict" not in ben_error.lower():
+        if ben_error:
             return None, f"Beneficiary error: {ben_error}"
+        
+        if not beneficiary_id:
+            return None, "Failed to create or find beneficiary"
         
         # Create transfer using V2 API
         transfer_id = f"TRF_{withdrawal_id[:12]}"
@@ -1077,6 +1080,8 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
         # Only add fundsource_id if configured
         if CASHFREE_FUNDSOURCE_ID:
             transfer_data["fundsource_id"] = CASHFREE_FUNDSOURCE_ID
+        
+        logger.info(f"Creating transfer {transfer_id} for beneficiary {beneficiary_id}")
         
         async with aiohttp.ClientSession() as session:
             async with session.post(
