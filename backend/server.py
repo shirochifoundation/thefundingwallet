@@ -994,11 +994,12 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
             logger.warning("Cashfree Payout keys not configured, skipping actual payout")
             return None, "Payout keys not configured"
         
-        # Step 1: Get or create beneficiary using V2 API
-        beneficiary_id = f"BEN_{user_id[:8]}_{payout_mode}"
+        # Create unique beneficiary ID for this withdrawal to avoid V1/V2 conflicts
+        beneficiary_id = f"BEN_{withdrawal_id[:8]}_{payout_mode}"
         user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
         
-        ben_id, ben_error = await get_or_create_beneficiary_v2(
+        # Always create a new V2 beneficiary
+        ben_id, ben_error = await create_beneficiary_v2(
             beneficiary_id=beneficiary_id,
             name=beneficiary_name or kyc.get("bank_account_holder", "User"),
             email=user_doc.get("email") if user_doc else "user@example.com",
@@ -1008,9 +1009,9 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
         )
         
         if ben_error and "already" not in ben_error.lower() and "conflict" not in ben_error.lower():
-            logger.warning(f"Beneficiary creation issue: {ben_error}, proceeding with transfer anyway")
+            return None, f"Beneficiary error: {ben_error}"
         
-        # Step 2: Create transfer using V2 API
+        # Create transfer using V2 API
         transfer_id = f"TRF_{withdrawal_id[:12]}"
         
         headers = {
