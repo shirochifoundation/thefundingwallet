@@ -937,6 +937,32 @@ CASHFREE_FUNDSOURCE_ID = os.environ.get('CASHFREE_FUNDSOURCE_ID', 'CASHFREE_4221
 CASHFREE_PAYOUT_V2_BASE_URL = "https://sandbox.cashfree.com/payout"
 
 
+async def get_existing_beneficiary_v2(bank_account: str = None, bank_ifsc: str = None, vpa: str = None):
+    """Get existing beneficiary by bank account or VPA using V2 API"""
+    try:
+        headers = {
+            "Content-Type": "application/json",
+            "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
+            "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
+            "x-api-version": "2024-01-01"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            if vpa:
+                url = f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary?vpa={vpa}"
+            else:
+                url = f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary?bank_account_number={bank_account}&bank_ifsc={bank_ifsc}"
+            
+            async with session.get(url, headers=headers) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    return result.get("beneficiary_id"), None
+                return None, None
+    except Exception as e:
+        logger.error(f"Get existing beneficiary error: {str(e)}")
+        return None, str(e)
+
+
 async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phone: str, payout_mode: str, kyc: dict):
     """Create beneficiary using Cashfree V2 API"""
     try:
@@ -959,10 +985,13 @@ async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phon
         }
         
         if payout_mode == "upi":
-            beneficiary_data["beneficiary_instrument_details"]["vpa"] = kyc.get("upi_id")
+            vpa = kyc.get("upi_id")
+            beneficiary_data["beneficiary_instrument_details"]["vpa"] = vpa
         else:
-            beneficiary_data["beneficiary_instrument_details"]["bank_account_number"] = kyc.get("bank_account_number")
-            beneficiary_data["beneficiary_instrument_details"]["bank_ifsc"] = kyc.get("bank_ifsc")
+            bank_account = kyc.get("bank_account_number")
+            bank_ifsc = kyc.get("bank_ifsc")
+            beneficiary_data["beneficiary_instrument_details"]["bank_account_number"] = bank_account
+            beneficiary_data["beneficiary_instrument_details"]["bank_ifsc"] = bank_ifsc
         
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -975,9 +1004,21 @@ async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phon
                 
                 if resp.status in [200, 201] or result.get("beneficiary_status") == "VERIFIED":
                     return beneficiary_id, None
-                elif "already" in str(result).lower() or "conflict" in str(result.get("code", "")).lower():
-                    # Beneficiary already exists in V2, that's fine
-                    return beneficiary_id, None
+                elif "conflict" in str(result.get("code", "")).lower() or "already" in str(result.get("message", "")).lower():
+                    # Beneficiary with same bank/vpa exists - find it
+                    logger.info("Beneficiary conflict - searching for existing one")
+                    if payout_mode == "upi":
+                        existing_id, _ = await get_existing_beneficiary_v2(vpa=kyc.get("upi_id"))
+                    else:
+                        existing_id, _ = await get_existing_beneficiary_v2(
+                            bank_account=kyc.get("bank_account_number"),
+                            bank_ifsc=kyc.get("bank_ifsc")
+                        )
+                    if existing_id:
+                        logger.info(f"Found existing beneficiary: {existing_id}")
+                        return existing_id, None
+                    else:
+                        return None, "Beneficiary conflict but could not find existing one"
                 else:
                     error_msg = result.get("message") or result.get("status_description") or "Failed to create beneficiary"
                     return None, error_msg
