@@ -931,43 +931,92 @@ async def get_kyc_status(current_user: dict = Depends(get_required_user)):
 
 # ==================== WITHDRAWAL ENDPOINTS ====================
 
-async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_mode: str, kyc: dict, beneficiary_name: str):
+async def create_or_get_beneficiary(user_id: str, payout_mode: str, kyc: dict, beneficiary_name: str, headers: dict):
+    """Create or get existing beneficiary in Cashfree"""
+    beneficiary_id = f"BEN_{user_id[:8]}_{payout_mode}"
+    
+    # Build beneficiary payload
+    beneficiary_payload = {
+        "beneficiary_id": beneficiary_id,
+        "beneficiary_name": beneficiary_name or kyc.get("bank_account_holder", "Beneficiary"),
+        "beneficiary_email": kyc.get("email", "user@example.com"),
+        "beneficiary_phone": kyc.get("phone", "9999999999")
+    }
+    
+    if payout_mode == "upi":
+        beneficiary_payload["beneficiary_instrument_details"] = {
+            "vpa": kyc.get("upi_id")
+        }
+    else:  # bank transfer
+        beneficiary_payload["beneficiary_instrument_details"] = {
+            "bank_account_number": kyc.get("bank_account_number"),
+            "bank_ifsc": kyc.get("bank_ifsc")
+        }
+    
+    async with aiohttp.ClientSession() as session:
+        # First try to get existing beneficiary
+        async with session.get(
+            f"{CASHFREE_PAYOUT_BASE_URL}/payout/beneficiaries/{beneficiary_id}",
+            headers=headers
+        ) as resp:
+            if resp.status == 200:
+                logger.info(f"Beneficiary {beneficiary_id} already exists")
+                return beneficiary_id, None
+        
+        # Create new beneficiary
+        async with session.post(
+            f"{CASHFREE_PAYOUT_BASE_URL}/payout/beneficiaries",
+            json=beneficiary_payload,
+            headers=headers
+        ) as resp:
+            cf_response = await resp.json()
+            logger.info(f"Create beneficiary response: {cf_response}")
+            
+            if resp.status in [200, 201]:
+                return beneficiary_id, None
+            elif "already exists" in str(cf_response.get("message", "")).lower():
+                return beneficiary_id, None
+            else:
+                error_msg = cf_response.get("message") or "Failed to create beneficiary"
+                return None, error_msg
+
+
+async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_mode: str, kyc: dict, beneficiary_name: str, user_id: str):
     """Process payout via Cashfree Payouts API"""
     try:
         if not CASHFREE_PAYOUT_CLIENT_ID or not CASHFREE_PAYOUT_SECRET_KEY:
             logger.warning("Cashfree Payout keys not configured, skipping actual payout")
             return None, "Payout keys not configured"
         
-        transfer_id = f"TRF_{withdrawal_id[:12]}"
-        
-        # Build beneficiary details based on payout mode
-        beneficiary_details = {
-            "beneficiary_id": f"BEN_{kyc['user_id'][:8]}_{payout_mode}",
-            "beneficiary_name": beneficiary_name or kyc.get("bank_account_holder", "Beneficiary")
-        }
-        
-        if payout_mode == "upi":
-            beneficiary_details["beneficiary_instrument_details"] = {
-                "vpa": kyc.get("upi_id")
-            }
-        else:  # bank transfer
-            beneficiary_details["beneficiary_instrument_details"] = {
-                "bank_account_number": kyc.get("bank_account_number"),
-                "bank_ifsc": kyc.get("bank_ifsc")
-            }
-        
-        transfer_payload = {
-            "transfer_id": transfer_id,
-            "transfer_amount": net_amount,
-            "transfer_mode": payout_mode if payout_mode == "upi" else "banktransfer",
-            "beneficiary_details": beneficiary_details
-        }
-        
         headers = {
             "Content-Type": "application/json",
             "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
             "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
             "x-api-version": "2024-01-01"
+        }
+        
+        # Step 1: Create or get beneficiary
+        beneficiary_id, ben_error = await create_or_get_beneficiary(
+            user_id=user_id,
+            payout_mode=payout_mode,
+            kyc=kyc,
+            beneficiary_name=beneficiary_name,
+            headers=headers
+        )
+        
+        if ben_error:
+            return None, f"Beneficiary error: {ben_error}"
+        
+        # Step 2: Create transfer
+        transfer_id = f"TRF_{withdrawal_id[:12]}"
+        
+        transfer_payload = {
+            "transfer_id": transfer_id,
+            "transfer_amount": net_amount,
+            "transfer_mode": payout_mode if payout_mode == "upi" else "banktransfer",
+            "beneficiary_details": {
+                "beneficiary_id": beneficiary_id
+            }
         }
         
         async with aiohttp.ClientSession() as session:
@@ -980,7 +1029,7 @@ async def process_cashfree_payout(withdrawal_id: str, net_amount: float, payout_
                 logger.info(f"Cashfree Payout response for {transfer_id}: {cf_response}")
                 
                 if resp.status in [200, 201]:
-                    cf_transfer_id = cf_response.get("cf_transfer_id") or cf_response.get("data", {}).get("cf_transfer_id")
+                    cf_transfer_id = cf_response.get("cf_transfer_id") or cf_response.get("data", {}).get("cf_transfer_id") or transfer_id
                     return cf_transfer_id, None
                 else:
                     error_msg = cf_response.get("message") or cf_response.get("error", {}).get("message", "Payout failed")
