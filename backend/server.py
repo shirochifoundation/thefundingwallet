@@ -852,6 +852,20 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_requi
         if kyc_data.bank_account_number and (not kyc_data.bank_ifsc or not kyc_data.bank_account_holder):
             raise HTTPException(status_code=400, detail="Bank IFSC and account holder name required with bank account")
         
+        # Validate: Cashfree VBA/VPA cannot be used as beneficiary
+        if kyc_data.bank_ifsc and kyc_data.bank_ifsc.upper().startswith("IDFB"):
+            # IDFB is IDFC First Bank - check if it's a Cashfree VBA pattern
+            if kyc_data.bank_account_number and "TZT" in kyc_data.bank_account_number.upper():
+                raise HTTPException(status_code=400, detail="Cashfree Virtual Bank Account (VBA) cannot be used. Please provide your personal bank account.")
+        
+        # Validate: Block Cashfree test VPAs
+        if kyc_data.upi_id:
+            blocked_vpas = ["success@upi", "failure@upi", "cashfree@", "test@"]
+            upi_lower = kyc_data.upi_id.lower()
+            for blocked in blocked_vpas:
+                if blocked in upi_lower:
+                    raise HTTPException(status_code=400, detail="Test/Virtual UPI IDs cannot be used. Please provide your personal UPI ID.")
+        
         now = datetime.now(timezone.utc).isoformat()
         kyc_id = existing_kyc["id"] if existing_kyc else str(uuid.uuid4())
         
