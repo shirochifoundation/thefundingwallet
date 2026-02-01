@@ -995,7 +995,7 @@ async def create_beneficiary_v2(beneficiary_id: str, name: str, email: str, phon
         
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                f"{CASHFREE_PAYOUT_V2_BASE_URL}/beneficiary",
+                f"{CASHFREE_PAYOUT_BASE_URL}/beneficiary",
                 json=beneficiary_data,
                 headers=headers
             ) as resp:
