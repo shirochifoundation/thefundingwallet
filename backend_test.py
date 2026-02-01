@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import uuid
 
 class FundFlowAPITester:
-    def __init__(self, base_url="https://donate-pool.preview.emergentagent.com"):
+    def __init__(self, base_url="https://fundraiserpro.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
