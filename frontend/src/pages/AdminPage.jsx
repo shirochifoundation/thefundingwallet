@@ -150,19 +150,19 @@ export default function AdminPage() {
   const handleWithdrawalProcess = async () => {
     if (!withdrawalModal.withdrawal) return;
 
-    if (withdrawalModal.action === "fail" && !failureReason.trim()) {
-      toast.error("Please provide a failure reason");
+    if (withdrawalModal.action === "reject" && !failureReason.trim()) {
+      toast.error("Please provide a rejection reason");
       return;
     }
 
     setLoading(true);
     try {
       await axios.post(
-        `${API}/admin/withdrawals/${withdrawalModal.withdrawal.id}/process?action=${withdrawalModal.action}${withdrawalModal.action === "fail" ? `&failure_reason=${encodeURIComponent(failureReason)}` : ""}`,
+        `${API}/admin/withdrawals/${withdrawalModal.withdrawal.id}/process?action=${withdrawalModal.action}${withdrawalModal.action === "reject" ? `&failure_reason=${encodeURIComponent(failureReason)}` : ""}`,
         {},
         { headers: getAuthHeader() }
       );
-      toast.success(`Withdrawal ${withdrawalModal.action === "complete" ? "completed" : "marked as failed"}`);
+      toast.success(`Withdrawal ${withdrawalModal.action === "approve" ? "approved and sent to Cashfree" : "rejected"}`);
       setWithdrawalModal({ open: false, withdrawal: null, action: "" });
       setFailureReason("");
       fetchAllData();
