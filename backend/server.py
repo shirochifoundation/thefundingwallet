@@ -1108,6 +1108,72 @@ async def get_my_withdrawals(current_user: dict = Depends(get_required_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/withdrawals/{withdrawal_id}/status")
+async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depends(get_required_user)):
+    """Check and sync withdrawal status from Cashfree"""
+    try:
+        withdrawal = await db.withdrawals.find_one(
+            {"id": withdrawal_id, "user_id": current_user["id"]},
+            {"_id": 0}
+        )
+        if not withdrawal:
+            raise HTTPException(status_code=404, detail="Withdrawal not found")
+        
+        cf_transfer_id = withdrawal.get("cf_transfer_id")
+        if not cf_transfer_id:
+            return {"status": withdrawal["status"], "message": "No Cashfree transfer ID"}
+        
+        # Query Cashfree for transfer status
+        headers = {
+            "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
+            "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
+            "x-api-version": "2024-01-01"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            transfer_id = f"TRF_{withdrawal_id[:12]}"
+            async with session.get(
+                f"{CASHFREE_PAYOUT_BASE_URL}/payout/transfers/{transfer_id}",
+                headers=headers
+            ) as resp:
+                if resp.status == 200:
+                    cf_response = await resp.json()
+                    cf_status = cf_response.get("status") or cf_response.get("data", {}).get("status")
+                    
+                    # Map Cashfree status to our status
+                    new_status = withdrawal["status"]
+                    if cf_status in ["SUCCESS", "COMPLETED"]:
+                        new_status = WithdrawalStatus.COMPLETED.value
+                    elif cf_status in ["FAILED", "REVERSED", "REJECTED"]:
+                        new_status = WithdrawalStatus.FAILED.value
+                    elif cf_status in ["PENDING", "PROCESSING"]:
+                        new_status = WithdrawalStatus.PROCESSING.value
+                    
+                    # Update if status changed
+                    if new_status != withdrawal["status"]:
+                        await db.withdrawals.update_one(
+                            {"id": withdrawal_id},
+                            {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                        )
+                        
+                        # If failed, refund the withdrawn amount
+                        if new_status == WithdrawalStatus.FAILED.value:
+                            await db.collections.update_one(
+                                {"id": withdrawal["collection_id"]},
+                                {"$inc": {"withdrawn_amount": -withdrawal["amount"]}}
+                            )
+                    
+                    return {"status": new_status, "cf_status": cf_status}
+                else:
+                    return {"status": withdrawal["status"], "message": "Could not fetch status from Cashfree"}
+                    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking withdrawal status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== ADMIN ENDPOINTS ====================
 @api_router.post("/admin/login", response_model=TokenResponse)
 async def admin_login(credentials: UserLogin):
