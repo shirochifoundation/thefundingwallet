@@ -618,23 +618,30 @@ export default function AdminPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Bricolage Grotesque' }}>
-              {withdrawalModal.action === "complete" ? "Complete Withdrawal" : "Mark as Failed"}
+              {withdrawalModal.action === "approve" ? "Approve Withdrawal" : "Reject Withdrawal"}
             </DialogTitle>
             <DialogDescription>
-              {withdrawalModal.action === "complete"
-                ? `Confirm payout of ${formatAmount(withdrawalModal.withdrawal?.net_amount)} to ${withdrawalModal.withdrawal?.user_name}?`
-                : `Please provide a reason for failing this withdrawal.`
+              {withdrawalModal.action === "approve"
+                ? `Approve and send payout of ${formatAmount(withdrawalModal.withdrawal?.net_amount)} to ${withdrawalModal.withdrawal?.user_name}?`
+                : `Please provide a reason for rejecting this withdrawal.`
               }
             </DialogDescription>
           </DialogHeader>
-          {withdrawalModal.action === "fail" && (
+          {withdrawalModal.action === "reject" && (
             <Textarea
-              placeholder="Enter failure reason..."
+              placeholder="Enter rejection reason..."
               value={failureReason}
               onChange={(e) => setFailureReason(e.target.value)}
               className="mt-2"
-              data-testid="failure-reason-input"
+              data-testid="rejection-reason-input"
             />
+          )}
+          {withdrawalModal.action === "approve" && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                This will initiate a payout via Cashfree. The transfer will be processed immediately.
+              </p>
+            </div>
           )}
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setWithdrawalModal({ open: false, withdrawal: null, action: "" })}>
@@ -643,7 +650,7 @@ export default function AdminPage() {
             <Button
               onClick={handleWithdrawalProcess}
               disabled={loading}
-              className={withdrawalModal.action === "complete" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
+              className={withdrawalModal.action === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
               data-testid="confirm-withdrawal-action"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
