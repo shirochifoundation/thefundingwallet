@@ -1442,51 +1442,85 @@ async def get_all_withdrawals(
 @api_router.post("/admin/withdrawals/{withdrawal_id}/process")
 async def process_withdrawal(
     withdrawal_id: str,
-    action: str = Query(..., regex="^(complete|fail)$"),
+    action: str = Query(..., regex="^(approve|reject)$"),
     failure_reason: Optional[str] = None,
     admin_user: dict = Depends(get_admin_user)
 ):
-    """Process withdrawal - mark as completed or failed (admin only)"""
+    """Process withdrawal - approve (sends to Cashfree) or reject (admin only)"""
     try:
         withdrawal = await db.withdrawals.find_one({"id": withdrawal_id}, {"_id": 0})
         if not withdrawal:
             raise HTTPException(status_code=404, detail="Withdrawal not found")
         
-        if withdrawal["status"] not in [WithdrawalStatus.PENDING.value, WithdrawalStatus.PROCESSING.value]:
-            raise HTTPException(status_code=400, detail="Withdrawal already processed")
+        if withdrawal["status"] not in [WithdrawalStatus.PENDING.value]:
+            raise HTTPException(status_code=400, detail="Only pending withdrawals can be processed")
         
         now = datetime.now(timezone.utc).isoformat()
         
-        if action == "complete":
-            new_status = WithdrawalStatus.COMPLETED.value
-            failure_reason = None
+        if action == "approve":
+            # Get user's KYC details for payout
+            kyc = await db.kyc.find_one({"user_id": withdrawal["user_id"]}, {"_id": 0})
+            if not kyc:
+                raise HTTPException(status_code=400, detail="User KYC not found")
+            
+            user = await db.users.find_one({"id": withdrawal["user_id"]}, {"_id": 0})
+            
+            # Call Cashfree Payout API
+            cf_transfer_id, payout_error = await process_cashfree_payout(
+                withdrawal_id=withdrawal_id,
+                net_amount=withdrawal["net_amount"],
+                payout_mode=withdrawal["payout_mode"],
+                kyc=kyc,
+                beneficiary_name=user.get("name") if user else "User",
+                user_id=withdrawal["user_id"]
+            )
+            
+            if cf_transfer_id:
+                new_status = WithdrawalStatus.PROCESSING.value
+                update_data = {
+                    "status": new_status,
+                    "cf_transfer_id": cf_transfer_id,
+                    "failure_reason": None,
+                    "approved_by": admin_user["id"],
+                    "approved_at": now,
+                    "updated_at": now
+                }
+                logger.info(f"Withdrawal {withdrawal_id} approved and sent to Cashfree: {cf_transfer_id}")
+            else:
+                # Payout failed - keep as pending with error message
+                update_data = {
+                    "failure_reason": f"Payout failed: {payout_error}",
+                    "updated_at": now
+                }
+                logger.error(f"Withdrawal {withdrawal_id} payout failed: {payout_error}")
+                
+                await db.withdrawals.update_one({"id": withdrawal_id}, {"$set": update_data})
+                raise HTTPException(status_code=500, detail=f"Payout failed: {payout_error}")
         else:
+            # Reject withdrawal
             new_status = WithdrawalStatus.FAILED.value
             if not failure_reason:
-                failure_reason = "Payment failed"
+                failure_reason = "Rejected by admin"
             
-            # Refund the withdrawn amount back to collection
+            update_data = {
+                "status": new_status,
+                "failure_reason": failure_reason,
+                "rejected_by": admin_user["id"],
+                "rejected_at": now,
+                "updated_at": now
+            }
+            
+            # Refund the reserved amount back to collection
             await db.collections.update_one(
                 {"id": withdrawal["collection_id"]},
                 {"$inc": {"withdrawn_amount": -withdrawal["amount"]}}
             )
+            
+            logger.info(f"Withdrawal {withdrawal_id} rejected by admin {admin_user['id']}")
         
-        await db.withdrawals.update_one(
-            {"id": withdrawal_id},
-            {
-                "$set": {
-                    "status": new_status,
-                    "failure_reason": failure_reason,
-                    "processed_by": admin_user["id"],
-                    "processed_at": now,
-                    "updated_at": now
-                }
-            }
-        )
+        await db.withdrawals.update_one({"id": withdrawal_id}, {"$set": update_data})
         
-        logger.info(f"Withdrawal {withdrawal_id} {action}d by admin {admin_user['id']}")
-        
-        return {"status": "success", "message": f"Withdrawal {action}d"}
+        return {"status": "success", "message": f"Withdrawal {action}d successfully"}
     except HTTPException:
         raise
     except Exception as e:
