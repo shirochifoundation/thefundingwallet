@@ -1093,7 +1093,8 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
             net_amount=net_amount,
             payout_mode=request.payout_mode,
             kyc=kyc,
-            beneficiary_name=current_user.get("name")
+            beneficiary_name=current_user.get("name"),
+            user_id=current_user["id"]
         )
         
         # Determine status based on payout result
