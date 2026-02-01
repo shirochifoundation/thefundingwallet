@@ -1138,7 +1138,7 @@ async def request_withdrawal(request: WithdrawalRequest, current_user: dict = De
             {"$inc": {"withdrawn_amount": request.amount}}
         )
         
-        logger.info(f"Withdrawal requested: {withdrawal_id} for ₹{request.amount}, CF Transfer: {cf_transfer_id}")
+        logger.info(f"Withdrawal requested: {withdrawal_id} for ₹{request.amount} - pending admin approval")
         
         return WithdrawalResponse(**withdrawal_doc)
         
