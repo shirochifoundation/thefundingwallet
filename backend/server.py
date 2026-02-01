@@ -1225,7 +1225,7 @@ async def check_withdrawal_status(withdrawal_id: str, current_user: dict = Depen
         
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{CASHFREE_PAYOUT_V2_BASE_URL}/transfers?cf_transfer_id={cf_transfer_id}",
+                f"{CASHFREE_PAYOUT_BASE_URL}/transfers?cf_transfer_id={cf_transfer_id}",
                 headers=headers
             ) as resp:
                 if resp.status == 200:
