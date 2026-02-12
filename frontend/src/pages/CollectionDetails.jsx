@@ -631,17 +631,19 @@ export default function CollectionDetails() {
         </Tabs>
       </div>
 
-      {/* Mobile Fixed Donate Button */}
-      <div className="md:hidden fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-zinc-200">
-        <Button 
-          className="w-full bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-xl py-5 text-lg font-bold shadow-lg"
-          onClick={() => setActiveTab("donate")}
-          data-testid="donate-btn-mobile"
-        >
-          <Heart className="w-5 h-5 mr-2" />
-          Donate Now
-        </Button>
-      </div>
+      {/* Mobile Fixed Donate Button - Hidden when already on Donate tab */}
+      {activeTab !== "donate" && (
+        <div className="md:hidden fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-zinc-200">
+          <Button 
+            className="w-full bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-xl py-5 text-lg font-bold shadow-lg"
+            onClick={() => setActiveTab("donate")}
+            data-testid="donate-btn-mobile"
+          >
+            <Heart className="w-5 h-5 mr-2" />
+            Donate Now
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
