@@ -162,7 +162,7 @@ export default function AdminPage() {
         {},
         { headers: getAuthHeader() }
       );
-      toast.success(`Withdrawal ${withdrawalModal.action === "approve" ? "approved and sent to Cashfree" : "rejected"}`);
+      toast.success(`Withdrawal ${withdrawalModal.action === "approve" ? "approved and sent to RazorpayX" : "rejected"}`);
       setWithdrawalModal({ open: false, withdrawal: null, action: "" });
       setFailureReason("");
       fetchAllData();
