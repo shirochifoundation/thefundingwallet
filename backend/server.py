@@ -18,6 +18,7 @@ import json
 import aiohttp
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+import razorpay
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -27,16 +28,15 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Cashfree configuration
-CASHFREE_CLIENT_ID = os.environ.get('CASHFREE_CLIENT_ID')
-CASHFREE_SECRET_KEY = os.environ.get('CASHFREE_SECRET_KEY')
-CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
-CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/pg"
+# Razorpay configuration (for payment collection)
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
-# Cashfree Payout V2 configuration
+# Cashfree Payout V2 configuration (for withdrawals)
+CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
 CASHFREE_PAYOUT_CLIENT_ID = os.environ.get('CASHFREE_PAYOUT_CLIENT_ID')
 CASHFREE_PAYOUT_SECRET_KEY = os.environ.get('CASHFREE_PAYOUT_SECRET_KEY')
-# V2 API base URL (V1 is deprecated)
 CASHFREE_PAYOUT_BASE_URL = "https://sandbox.cashfree.com/payout" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/payout"
 
 # Admin credentials (for demo - in production use proper auth)
