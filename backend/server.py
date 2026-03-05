@@ -1052,7 +1052,8 @@ async def get_virtual_account(collection_id: str):
         virtual_account = collection.get("virtual_account")
         if not virtual_account:
             # Try to create one if it doesn't exist
-            virtual_account_data = await create_virtual_account(collection_id, collection.get("title", ""))
+            organizer_email = collection.get("organizer_email")
+            virtual_account_data = await create_virtual_account(collection_id, collection.get("title", ""), organizer_email)
             if virtual_account_data:
                 receivers = virtual_account_data.get("receivers", [])
                 bank_account = None
