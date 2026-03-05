@@ -587,7 +587,7 @@ async def get_my_collections(
 # ==================== PAYMENT ENDPOINTS ====================
 @api_router.post("/payments/create-order", response_model=PaymentOrderResponse)
 async def create_payment_order(payment: PaymentOrderCreate):
-    """Create a payment order with Cashfree"""
+    """Create a payment order with Razorpay"""
     try:
         # Verify collection exists and is active
         collection = await db.collections.find_one({"id": payment.collection_id}, {"_id": 0})
@@ -596,61 +596,34 @@ async def create_payment_order(payment: PaymentOrderCreate):
         if collection.get("status") != CollectionStatus.ACTIVE.value:
             raise HTTPException(status_code=400, detail="Collection is no longer accepting donations")
         
-        # Generate unique order ID
+        # Generate unique order ID (receipt must be <= 40 chars)
         order_id = f"order_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc).isoformat()
         
-        # Create order via Cashfree HTTP API
-        base_url = os.environ.get('API_BASE_URL', 'http://localhost:3000')
+        # Amount in paise (Razorpay uses smallest currency unit)
+        amount_paise = int(payment.amount * 100)
         
-        order_payload = {
-            "order_id": order_id,
-            "order_amount": payment.amount,
-            "order_currency": "INR",
-            "customer_details": {
-                "customer_id": f"donor_{uuid.uuid4().hex[:8]}",
-                "customer_name": payment.donor_name,
-                "customer_email": payment.donor_email,
-                "customer_phone": payment.donor_phone
-            },
-            "order_meta": {
-                "return_url": f"{base_url}/payment/callback?order_id={order_id}",
-                "notify_url": f"{os.environ.get('WEBHOOK_URL', base_url)}/api/webhooks/payment"
+        # Create order via Razorpay
+        razorpay_order = razorpay_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": order_id[:40],  # Receipt must be <= 40 chars
+            "payment_capture": 1,  # Auto capture payment
+            "notes": {
+                "collection_id": payment.collection_id,
+                "donor_name": payment.donor_name,
+                "donor_email": payment.donor_email
             }
-        }
+        })
         
-        headers = {
-            "Content-Type": "application/json",
-            "x-client-id": CASHFREE_CLIENT_ID,
-            "x-client-secret": CASHFREE_SECRET_KEY,
-            "x-api-version": "2023-08-01"
-        }
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{CASHFREE_BASE_URL}/orders",
-                json=order_payload,
-                headers=headers
-            ) as resp:
-                cf_response = await resp.json()
-                
-                if resp.status != 200:
-                    logger.error(f"Cashfree order creation failed: {cf_response}")
-                    raise HTTPException(
-                        status_code=400, 
-                        detail=cf_response.get("message", "Failed to create payment order")
-                    )
-        
-        cf_order_id = cf_response.get("cf_order_id")
-        payment_session_id = cf_response.get("payment_session_id")
-        order_status = cf_response.get("order_status")
+        razorpay_order_id = razorpay_order.get("id")
         
         # Store donation record (pending)
         donation_doc = {
             "id": str(uuid.uuid4()),
             "collection_id": payment.collection_id,
             "order_id": order_id,
-            "cf_order_id": cf_order_id,
+            "razorpay_order_id": razorpay_order_id,
             "donor_name": payment.donor_name,
             "donor_email": payment.donor_email,
             "donor_phone": payment.donor_phone,
@@ -658,19 +631,19 @@ async def create_payment_order(payment: PaymentOrderCreate):
             "message": payment.message,
             "anonymous": payment.anonymous,
             "status": PaymentStatus.PENDING.value,
-            "payment_session_id": payment_session_id,
             "created_at": now,
             "updated_at": now
         }
         
         await db.donations.insert_one(donation_doc)
-        logger.info(f"Payment order created: {order_id} for collection {payment.collection_id}")
+        logger.info(f"Razorpay order created: {order_id} -> {razorpay_order_id} for collection {payment.collection_id}")
         
         return PaymentOrderResponse(
             order_id=order_id,
-            cf_order_id=cf_order_id,
-            payment_session_id=payment_session_id,
-            order_status=order_status
+            razorpay_order_id=razorpay_order_id,
+            razorpay_key_id=RAZORPAY_KEY_ID,
+            amount=amount_paise,
+            currency="INR"
         )
         
     except HTTPException:
