@@ -104,6 +104,32 @@ export default function CollectionDetails() {
     }
   };
 
+  const fetchVirtualAccount = async () => {
+    if (virtualAccount) return; // Already loaded
+    setLoadingVA(true);
+    try {
+      const response = await axios.get(`${API}/collections/${id}/virtual-account`);
+      setVirtualAccount(response.data.virtual_account);
+    } catch (error) {
+      console.error("Error fetching virtual account:", error);
+      // Don't show error toast - user can still use card payment
+    } finally {
+      setLoadingVA(false);
+    }
+  };
+
+  // Fetch virtual account when donate tab is opened
+  useEffect(() => {
+    if (activeTab === "donate" && !virtualAccount) {
+      fetchVirtualAccount();
+    }
+  }, [activeTab]);
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
   const handleDonate = async (e) => {
     e.preventDefault();
     
