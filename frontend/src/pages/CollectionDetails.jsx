@@ -137,12 +137,14 @@ export default function CollectionDetails() {
           handler: async function (razorpayResponse) {
             // Verify payment on server
             try {
+              console.log("Razorpay payment response:", razorpayResponse);
               const verifyResponse = await axios.post(`${API}/payments/verify-razorpay`, {
                 razorpay_order_id: razorpayResponse.razorpay_order_id,
                 razorpay_payment_id: razorpayResponse.razorpay_payment_id,
                 razorpay_signature: razorpayResponse.razorpay_signature
               });
               
+              console.log("Verify response:", verifyResponse.data);
               if (verifyResponse.data.status === "success") {
                 window.location.href = `/payment/callback?order_id=${order_id}&status=success`;
               } else {
@@ -150,6 +152,9 @@ export default function CollectionDetails() {
               }
             } catch (verifyError) {
               console.error("Payment verification error:", verifyError);
+              console.error("Error details:", verifyError.response?.data);
+              // Even if verification fails, the payment might be successful
+              // Redirect to pending page which will poll for status
               window.location.href = `/payment/callback?order_id=${order_id}&status=pending`;
             }
           },
