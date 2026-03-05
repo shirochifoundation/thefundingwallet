@@ -31,7 +31,11 @@ db = client[os.environ['DB_NAME']]
 # Razorpay configuration (for payment collection)
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
+# Razorpay API base URL
+RAZORPAY_API_URL = "https://api.razorpay.com/v1"
 
 # Cashfree Payout V2 configuration (for withdrawals)
 CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
