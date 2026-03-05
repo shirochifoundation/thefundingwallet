@@ -52,6 +52,9 @@ export default function CollectionDetails() {
   const [loading, setLoading] = useState(true);
   const [donationLoading, setDonationLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [virtualAccount, setVirtualAccount] = useState(null);
+  const [loadingVA, setLoadingVA] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("bank"); // "bank" or "card"
   
   // Donation form state - pre-populate with logged in user data
   const [donorName, setDonorName] = useState("");
