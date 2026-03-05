@@ -607,16 +607,18 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             
             for receiver in receivers:
                 if receiver.get("entity") == "bank_account":
+                    # Bank account data is at the receiver level, not nested
                     bank_account = {
-                        "account_number": receiver.get("bank_account", {}).get("account_number"),
-                        "ifsc": receiver.get("bank_account", {}).get("ifsc"),
-                        "bank_name": receiver.get("bank_account", {}).get("bank_name"),
-                        "name": receiver.get("bank_account", {}).get("name")
+                        "account_number": receiver.get("account_number"),
+                        "ifsc": receiver.get("ifsc"),
+                        "bank_name": receiver.get("bank_name"),
+                        "name": receiver.get("name")
                     }
                 elif receiver.get("entity") == "vpa":
+                    # VPA data is at the receiver level
                     vpa = {
-                        "address": receiver.get("vpa", {}).get("address"),  # e.g., "rzp.payto00000gqfnkjfepl@icici"
-                        "handle": receiver.get("vpa", {}).get("handle")
+                        "address": receiver.get("address"),
+                        "handle": receiver.get("handle")
                     }
             
             doc["virtual_account"] = {
