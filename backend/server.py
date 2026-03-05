@@ -523,8 +523,42 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             "created_at": now,
             "updated_at": now,
             "share_link": generate_share_link(collection_id),
-            "gallery": []
+            "gallery": [],
+            "virtual_account": None  # Will be populated by Smart Collect
         }
+        
+        # Create Razorpay Smart Collect Virtual Account
+        virtual_account = await create_virtual_account(collection_id, collection.title)
+        if virtual_account:
+            # Extract bank account and VPA details
+            receivers = virtual_account.get("receivers", [])
+            bank_account = None
+            vpa = None
+            
+            for receiver in receivers:
+                if receiver.get("entity") == "bank_account":
+                    bank_account = {
+                        "account_number": receiver.get("bank_account", {}).get("account_number"),
+                        "ifsc": receiver.get("bank_account", {}).get("ifsc"),
+                        "bank_name": receiver.get("bank_account", {}).get("bank_name"),
+                        "name": receiver.get("bank_account", {}).get("name")
+                    }
+                elif receiver.get("entity") == "vpa":
+                    vpa = {
+                        "address": receiver.get("vpa", {}).get("address"),  # e.g., "rzp.payto00000gqfnkjfepl@icici"
+                        "handle": receiver.get("vpa", {}).get("handle")
+                    }
+            
+            doc["virtual_account"] = {
+                "id": virtual_account.get("id"),
+                "status": virtual_account.get("status"),
+                "bank_account": bank_account,
+                "vpa": vpa,
+                "created_at": now
+            }
+            logger.info(f"Virtual account attached to collection {collection_id}")
+        else:
+            logger.warning(f"Could not create virtual account for collection {collection_id}")
         
         await db.collections.insert_one(doc)
         logger.info(f"Collection created: {collection_id}")
