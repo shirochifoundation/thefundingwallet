@@ -200,7 +200,10 @@ export default function CollectionDetails() {
     );
   }
 
-  const progress = Math.min((collection.current_amount / collection.goal_amount) * 100, 100);
+  const progress = collection.goal_amount 
+    ? Math.min((collection.current_amount / collection.goal_amount) * 100, 100)
+    : 0;
+  const hasGoal = collection.goal_amount && collection.goal_amount > 0;
   const badgeClass = categoryColors[collection.category?.toLowerCase()] || categoryColors.other;
 
   const suggestedAmounts = [100, 500, 1000, 2000, 5000];
