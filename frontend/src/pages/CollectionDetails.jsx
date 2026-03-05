@@ -274,19 +274,23 @@ export default function CollectionDetails() {
                     >
                       {formatAmount(collection.current_amount)}
                     </span>
-                    <span className="text-zinc-500">
-                      of {formatAmount(collection.goal_amount)}
-                    </span>
+                    {hasGoal && (
+                      <span className="text-zinc-500">
+                        of {formatAmount(collection.goal_amount)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="mb-6">
-                  <Progress value={progress} className="h-3 bg-zinc-100" />
-                  <p className="text-sm text-zinc-500 mt-2 text-right">
-                    {progress.toFixed(0)}% of goal
-                  </p>
-                </div>
+                {/* Progress Bar - only show if goal is set */}
+                {hasGoal && (
+                  <div className="mb-6">
+                    <Progress value={progress} className="h-3 bg-zinc-100" />
+                    <p className="text-sm text-zinc-500 mt-2 text-right">
+                      {progress.toFixed(0)}% of goal
+                    </p>
+                  </div>
+                )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
