@@ -181,7 +181,9 @@ export default function CollectionDetails() {
         const razorpay = new window.Razorpay(options);
         razorpay.on('payment.failed', function (response) {
           console.error("Payment failed:", response.error);
-          window.location.href = `/payment/callback?order_id=${order_id}&status=failed`;
+          toast.error(response.error?.description || "Payment failed");
+          setDonationLoading(false);
+          // Don't redirect immediately, let user see the error
         });
         razorpay.open();
       } else {
