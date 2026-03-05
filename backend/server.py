@@ -654,7 +654,7 @@ async def create_payment_order(payment: PaymentOrderCreate):
 
 @api_router.get("/payments/verify/{order_id}")
 async def verify_payment(order_id: str):
-    """Verify payment status from Cashfree"""
+    """Verify payment status from Razorpay"""
     try:
         # Get donation record
         donation = await db.donations.find_one({"order_id": order_id}, {"_id": 0})
@@ -666,39 +666,29 @@ async def verify_payment(order_id: str):
             return {
                 "order_id": order_id,
                 "status": donation.get("status"),
-                "cf_order_status": "PAID" if donation.get("status") == PaymentStatus.SUCCESS.value else "FAILED",
+                "razorpay_status": "paid" if donation.get("status") == PaymentStatus.SUCCESS.value else "failed",
                 "amount": donation.get("amount"),
                 "collection_id": donation.get("collection_id")
             }
         
-        # Call Cashfree to verify order status via HTTP API
-        headers = {
-            "x-client-id": CASHFREE_CLIENT_ID,
-            "x-client-secret": CASHFREE_SECRET_KEY,
-            "x-api-version": "2023-08-01"
-        }
+        # Fetch order from Razorpay to verify status
+        razorpay_order_id = donation.get("razorpay_order_id")
+        razorpay_status = None
         
-        order_status = None
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f"{CASHFREE_BASE_URL}/orders/{order_id}",
-                    headers=headers
-                ) as resp:
-                    if resp.status == 200:
-                        cf_response = await resp.json()
-                        order_status = cf_response.get("order_status")
+            razorpay_order = razorpay_client.order.fetch(razorpay_order_id)
+            razorpay_status = razorpay_order.get("status")
         except Exception as e:
-            logger.error(f"Error fetching order from Cashfree: {e}")
+            logger.error(f"Error fetching order from Razorpay: {e}")
         
-        if not order_status:
+        if not razorpay_status:
             return {"status": donation.get("status"), "message": "Unable to verify with payment gateway"}
         
         # Update local record if status changed
         new_status = donation.get("status")
-        if order_status == "PAID":
+        if razorpay_status == "paid":
             new_status = PaymentStatus.SUCCESS.value
-        elif order_status in ["EXPIRED", "CANCELLED"]:
+        elif razorpay_status in ["expired", "cancelled"]:
             new_status = PaymentStatus.FAILED.value
         
         if new_status != donation.get("status"):
@@ -723,7 +713,7 @@ async def verify_payment(order_id: str):
         return {
             "order_id": order_id,
             "status": new_status,
-            "cf_order_status": order_status,
+            "razorpay_status": razorpay_status,
             "amount": donation.get("amount"),
             "collection_id": donation.get("collection_id")
         }
