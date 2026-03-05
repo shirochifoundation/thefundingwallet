@@ -299,9 +299,10 @@ class PaymentOrderCreate(BaseModel):
 
 class PaymentOrderResponse(BaseModel):
     order_id: str
-    cf_order_id: str
-    payment_session_id: str
-    order_status: str
+    razorpay_order_id: str
+    razorpay_key_id: str
+    amount: int  # Amount in paise
+    currency: str = "INR"
 
 
 # ==================== HELPER FUNCTIONS ====================
