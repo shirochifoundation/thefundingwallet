@@ -241,7 +241,7 @@ class CollectionCreate(BaseModel):
     title: str
     description: str
     category: str
-    goal_amount: float
+    goal_amount: Optional[float] = None  # Optional - no target amount
     visibility: CollectionVisibility = CollectionVisibility.PUBLIC
     deadline: Optional[str] = None
     cover_image: Optional[str] = None
@@ -255,7 +255,7 @@ class CollectionResponse(BaseModel):
     title: str
     description: str
     category: str
-    goal_amount: float
+    goal_amount: Optional[float] = None  # Optional - no target amount
     current_amount: float
     withdrawn_amount: float = 0.0
     available_amount: float = 0.0
