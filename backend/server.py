@@ -1890,7 +1890,7 @@ async def process_withdrawal(
     failure_reason: Optional[str] = None,
     admin_user: dict = Depends(get_admin_user)
 ):
-    """Process withdrawal - approve (sends to Cashfree) or reject (admin only)"""
+    """Process withdrawal - approve (sends to RazorpayX) or reject (admin only)"""
     try:
         withdrawal = await db.withdrawals.find_one({"id": withdrawal_id}, {"_id": 0})
         if not withdrawal:
@@ -1909,8 +1909,8 @@ async def process_withdrawal(
             
             user = await db.users.find_one({"id": withdrawal["user_id"]}, {"_id": 0})
             
-            # Call Cashfree Payout API
-            cf_transfer_id, payout_error = await process_cashfree_payout(
+            # Call RazorpayX Payout API
+            payout_id, payout_error = await process_razorpayx_payout(
                 withdrawal_id=withdrawal_id,
                 net_amount=withdrawal["net_amount"],
                 payout_mode=withdrawal["payout_mode"],
@@ -1919,17 +1919,17 @@ async def process_withdrawal(
                 user_id=withdrawal["user_id"]
             )
             
-            if cf_transfer_id:
+            if payout_id:
                 new_status = WithdrawalStatus.PROCESSING.value
                 update_data = {
                     "status": new_status,
-                    "cf_transfer_id": cf_transfer_id,
+                    "razorpay_payout_id": payout_id,
                     "failure_reason": None,
                     "approved_by": admin_user["id"],
                     "approved_at": now,
                     "updated_at": now
                 }
-                logger.info(f"Withdrawal {withdrawal_id} approved and sent to Cashfree: {cf_transfer_id}")
+                logger.info(f"Withdrawal {withdrawal_id} approved and sent to RazorpayX: {payout_id}")
             else:
                 # Payout failed - keep as pending with error message
                 update_data = {
