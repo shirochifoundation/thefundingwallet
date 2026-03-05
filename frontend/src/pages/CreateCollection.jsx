@@ -313,12 +313,12 @@ export default function CreateCollection() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-[#0a0a0a]">Goal Amount *</Label>
+                <Label className="text-sm font-medium text-[#0a0a0a]">Goal Amount (Optional)</Label>
                 <div className="relative mt-2">
                   <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                   <Input
                     type="number"
-                    placeholder="Enter target amount"
+                    placeholder="Enter target amount (optional)"
                     value={goalAmount}
                     onChange={(e) => setGoalAmount(e.target.value)}
                     className="pl-12 h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
@@ -326,7 +326,7 @@ export default function CreateCollection() {
                     data-testid="goal-amount-input"
                   />
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">Minimum ₹100</p>
+                <p className="text-xs text-zinc-500 mt-1">Leave empty for open-ended collection, or set minimum ₹100</p>
               </div>
 
               <div>
