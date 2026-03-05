@@ -24,16 +24,16 @@ export default function PaymentCallback() {
   const maxRetries = 10;
 
   const orderId = searchParams.get("order_id");
-  // Cashfree may also send order_status directly in query params
-  const cfOrderStatus = searchParams.get("order_status");
+  // Razorpay may send status directly in query params
+  const paymentStatus = searchParams.get("status");
 
   useEffect(() => {
     if (orderId) {
-      // If Cashfree already sent the status in URL, use it
-      if (cfOrderStatus === "PAID") {
-        // Still verify with backend to update database
-        verifyPayment(true);
-      } else if (cfOrderStatus === "FAILED" || cfOrderStatus === "CANCELLED") {
+      // If status is already provided in URL (from Razorpay handler)
+      if (paymentStatus === "success") {
+        setStatus("success");
+        fetchOrderDetails();
+      } else if (paymentStatus === "failed") {
         setStatus("failed");
         fetchOrderDetails();
       } else {
