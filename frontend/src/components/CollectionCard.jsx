@@ -90,14 +90,23 @@ export const CollectionCard = ({ collection }) => {
               <span className="text-lg font-bold text-[#0a0a0a] amount-display">
                 {formatAmount(collection.current_amount)}
               </span>
-              <span className="text-sm text-zinc-500">
-                of {formatAmount(collection.goal_amount)}
-              </span>
+              {hasGoal && (
+                <span className="text-sm text-zinc-500">
+                  of {formatAmount(collection.goal_amount)}
+                </span>
+              )}
+              {!hasGoal && (
+                <span className="text-sm text-zinc-500">raised</span>
+              )}
             </div>
-            <Progress value={progress} className="h-2 bg-zinc-100" />
-            <p className="text-xs text-zinc-500 text-right">
-              {progress.toFixed(0)}% raised
-            </p>
+            {hasGoal && (
+              <>
+                <Progress value={progress} className="h-2 bg-zinc-100" />
+                <p className="text-xs text-zinc-500 text-right">
+                  {progress.toFixed(0)}% raised
+                </p>
+              </>
+            )}
           </div>
 
           {/* Footer Stats */}
