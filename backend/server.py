@@ -420,6 +420,77 @@ async def get_me(current_user: dict = Depends(get_required_user)):
     return UserResponse(**current_user)
 
 
+# ==================== SMART COLLECT FUNCTIONS ====================
+async def create_virtual_account(collection_id: str, collection_title: str) -> dict:
+    """Create a Razorpay Smart Collect Virtual Account for a collection"""
+    try:
+        # Create a unique descriptor for the VPA (max 20 chars, alphanumeric)
+        vpa_descriptor = f"fund{collection_id[:8].replace('-', '')}"
+        
+        # Smart Collect API endpoint
+        url = f"{RAZORPAY_API_URL}/virtual_accounts"
+        
+        payload = {
+            "receivers": {
+                "types": ["bank_account", "vpa"]
+            },
+            "description": f"FundFlow: {collection_title[:50]}",
+            "customer_id": None,  # Can link to Razorpay customer if needed
+            "close_by": None,  # No expiry - will close manually when collection ends
+            "notes": {
+                "collection_id": collection_id,
+                "platform": "FundFlow"
+            }
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
+            
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response_data = await resp.json()
+                
+                if resp.status not in [200, 201]:
+                    logger.error(f"Failed to create virtual account: {response_data}")
+                    return None
+                
+                logger.info(f"Virtual account created for collection {collection_id}: {response_data.get('id')}")
+                return response_data
+                
+    except Exception as e:
+        logger.error(f"Error creating virtual account: {str(e)}")
+        return None
+
+
+async def close_virtual_account(virtual_account_id: str) -> bool:
+    """Close a Razorpay Virtual Account"""
+    try:
+        url = f"{RAZORPAY_API_URL}/virtual_accounts/{virtual_account_id}/close"
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
+            
+            async with session.post(url, headers=headers) as resp:
+                if resp.status == 200:
+                    logger.info(f"Virtual account closed: {virtual_account_id}")
+                    return True
+                else:
+                    response_data = await resp.json()
+                    logger.error(f"Failed to close virtual account: {response_data}")
+                    return False
+                    
+    except Exception as e:
+        logger.error(f"Error closing virtual account: {str(e)}")
+        return False
+
+
 # ==================== COLLECTION ENDPOINTS ====================
 @api_router.get("/")
 async def root():
