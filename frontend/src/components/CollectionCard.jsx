@@ -15,7 +15,10 @@ const categoryColors = {
 };
 
 export const CollectionCard = ({ collection }) => {
-  const progress = Math.min((collection.current_amount / collection.goal_amount) * 100, 100);
+  const hasGoal = collection.goal_amount && collection.goal_amount > 0;
+  const progress = hasGoal 
+    ? Math.min((collection.current_amount / collection.goal_amount) * 100, 100)
+    : 0;
   const badgeClass = categoryColors[collection.category?.toLowerCase()] || categoryColors.other;
   
   const formatAmount = (amount) => {
