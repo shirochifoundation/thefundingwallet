@@ -728,44 +728,44 @@ async def verify_payment(order_id: str):
 # ==================== WEBHOOK ENDPOINT ====================
 @api_router.post("/webhooks/payment")
 async def payment_webhook(request: Request):
-    """Handle Cashfree payment webhooks"""
+    """Handle Razorpay payment webhooks"""
     try:
         body = await request.body()
         payload = json.loads(body)
         
-        logger.info(f"Webhook received: {payload.get('type')}")
+        logger.info(f"Razorpay webhook received: {payload.get('event')}")
         
-        event_type = payload.get("type")
-        order_data = payload.get("data", {})
-        order_info = order_data.get("order", {})
-        payment_info = order_data.get("payment", {})
+        event_type = payload.get("event")
+        payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
         
-        order_id = order_info.get("order_id")
-        if not order_id:
+        razorpay_order_id = payment_entity.get("order_id")
+        razorpay_payment_id = payment_entity.get("id")
+        
+        if not razorpay_order_id:
             return {"status": "ignored", "reason": "No order_id in payload"}
         
-        # Get donation record
-        donation = await db.donations.find_one({"order_id": order_id}, {"_id": 0})
+        # Get donation record by razorpay_order_id
+        donation = await db.donations.find_one({"razorpay_order_id": razorpay_order_id}, {"_id": 0})
         if not donation:
-            logger.warning(f"Webhook for unknown order: {order_id}")
+            logger.warning(f"Webhook for unknown razorpay order: {razorpay_order_id}")
             return {"status": "ignored", "reason": "Order not found"}
         
         # Skip if already processed
         if donation.get("status") in [PaymentStatus.SUCCESS.value, PaymentStatus.FAILED.value]:
-            logger.info(f"Webhook for already processed order: {order_id}")
+            logger.info(f"Webhook for already processed order: {donation.get('order_id')}")
             return {"status": "already_processed"}
         
         now = datetime.now(timezone.utc).isoformat()
         
-        if event_type == "PAYMENT_SUCCESS_WEBHOOK":
+        if event_type == "payment.captured":
             # Use findOneAndUpdate to prevent race conditions - only update if still pending
             result = await db.donations.find_one_and_update(
-                {"order_id": order_id, "status": PaymentStatus.PENDING.value},
+                {"razorpay_order_id": razorpay_order_id, "status": PaymentStatus.PENDING.value},
                 {
                     "$set": {
                         "status": PaymentStatus.SUCCESS.value,
-                        "cf_payment_id": payment_info.get("cf_payment_id"),
-                        "payment_method": payment_info.get("payment_method"),
+                        "razorpay_payment_id": razorpay_payment_id,
+                        "payment_method": payment_entity.get("method"),
                         "updated_at": now
                     }
                 },
@@ -781,22 +781,102 @@ async def payment_webhook(request: Request):
                         "$set": {"updated_at": now}
                     }
                 )
-                logger.info(f"Payment webhook: SUCCESS for order {order_id}")
+                logger.info(f"Payment webhook: SUCCESS for order {donation.get('order_id')}")
             else:
-                logger.info(f"Payment webhook: order {order_id} already processed")
+                logger.info(f"Payment webhook: order {donation.get('order_id')} already processed")
             
-        elif event_type == "PAYMENT_FAILED_WEBHOOK":
+        elif event_type == "payment.failed":
             await db.donations.update_one(
-                {"order_id": order_id, "status": PaymentStatus.PENDING.value},
+                {"razorpay_order_id": razorpay_order_id, "status": PaymentStatus.PENDING.value},
                 {"$set": {"status": PaymentStatus.FAILED.value, "updated_at": now}}
             )
-            logger.info(f"Payment webhook: FAILED for order {order_id}")
+            logger.info(f"Payment webhook: FAILED for order {donation.get('order_id')}")
         
         return {"status": "processed"}
         
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+# ==================== RAZORPAY PAYMENT VERIFICATION ====================
+class RazorpayPaymentVerify(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+@api_router.post("/payments/verify-razorpay")
+async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
+    """Verify Razorpay payment signature and update donation status"""
+    try:
+        # Verify signature
+        params_dict = {
+            'razorpay_order_id': payment_data.razorpay_order_id,
+            'razorpay_payment_id': payment_data.razorpay_payment_id,
+            'razorpay_signature': payment_data.razorpay_signature
+        }
+        
+        try:
+            razorpay_client.utility.verify_payment_signature(params_dict)
+        except razorpay.errors.SignatureVerificationError:
+            logger.error(f"Razorpay signature verification failed for order {payment_data.razorpay_order_id}")
+            raise HTTPException(status_code=400, detail="Payment signature verification failed")
+        
+        # Get donation record
+        donation = await db.donations.find_one(
+            {"razorpay_order_id": payment_data.razorpay_order_id}, 
+            {"_id": 0}
+        )
+        if not donation:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # If already processed, return current status
+        if donation.get("status") == PaymentStatus.SUCCESS.value:
+            return {
+                "order_id": donation.get("order_id"),
+                "status": "success",
+                "amount": donation.get("amount"),
+                "collection_id": donation.get("collection_id")
+            }
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Update donation status
+        result = await db.donations.find_one_and_update(
+            {"razorpay_order_id": payment_data.razorpay_order_id, "status": PaymentStatus.PENDING.value},
+            {
+                "$set": {
+                    "status": PaymentStatus.SUCCESS.value,
+                    "razorpay_payment_id": payment_data.razorpay_payment_id,
+                    "updated_at": now
+                }
+            },
+            return_document=False
+        )
+        
+        # Update collection if status actually changed
+        if result:
+            await db.collections.update_one(
+                {"id": donation["collection_id"]},
+                {
+                    "$inc": {"current_amount": donation["amount"], "donor_count": 1},
+                    "$set": {"updated_at": now}
+                }
+            )
+            logger.info(f"Razorpay payment verified: SUCCESS for order {donation.get('order_id')}")
+        
+        return {
+            "order_id": donation.get("order_id"),
+            "status": "success",
+            "amount": donation.get("amount"),
+            "collection_id": donation.get("collection_id")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying Razorpay payment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== KYC ENDPOINTS ====================
