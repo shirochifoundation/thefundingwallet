@@ -809,6 +809,8 @@ class RazorpayPaymentVerify(BaseModel):
 async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
     """Verify Razorpay payment signature and update donation status"""
     try:
+        logger.info(f"Verifying Razorpay payment: order={payment_data.razorpay_order_id}, payment={payment_data.razorpay_payment_id}")
+        
         # Verify signature
         params_dict = {
             'razorpay_order_id': payment_data.razorpay_order_id,
@@ -818,9 +820,13 @@ async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
         
         try:
             razorpay_client.utility.verify_payment_signature(params_dict)
-        except razorpay.errors.SignatureVerificationError:
-            logger.error(f"Razorpay signature verification failed for order {payment_data.razorpay_order_id}")
+            logger.info(f"Signature verification successful for order {payment_data.razorpay_order_id}")
+        except razorpay.errors.SignatureVerificationError as sig_error:
+            logger.error(f"Razorpay signature verification failed for order {payment_data.razorpay_order_id}: {str(sig_error)}")
             raise HTTPException(status_code=400, detail="Payment signature verification failed")
+        except Exception as verify_error:
+            logger.error(f"Unexpected error during signature verification: {str(verify_error)}")
+            raise HTTPException(status_code=400, detail=f"Verification error: {str(verify_error)}")
         
         # Get donation record
         donation = await db.donations.find_one(
