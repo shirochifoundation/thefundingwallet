@@ -471,13 +471,16 @@ async def create_virtual_account(collection_id: str, collection_title: str, orga
         # Smart Collect API endpoint
         url = f"{RAZORPAY_API_URL}/virtual_accounts"
         
+        # Set close_by to 1 year from now (in Unix timestamp)
+        close_by_timestamp = int((datetime.now(timezone.utc) + timedelta(days=365)).timestamp())
+        
         payload = {
             "receivers": {
                 "types": ["bank_account", "vpa"]
             },
             "description": f"FundFlow: {collection_title[:50]}",
             "customer_id": customer_id,
-            "close_by": None,  # No expiry - will close manually when collection ends
+            "close_by": close_by_timestamp,
             "notes": {
                 "collection_id": collection_id,
                 "platform": "FundFlow"
