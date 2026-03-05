@@ -89,7 +89,8 @@ export default function CreateCollection() {
       toast.error("Please enter a description");
       return false;
     }
-    if (!goalAmount || parseFloat(goalAmount) < 100) {
+    // Goal amount is optional, but if provided must be at least ₹100
+    if (goalAmount && parseFloat(goalAmount) < 100) {
       toast.error("Goal amount must be at least ₹100");
       return false;
     }
