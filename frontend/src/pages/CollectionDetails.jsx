@@ -123,35 +123,70 @@ export default function CollectionDetails() {
         anonymous: anonymous
       });
 
-      const { payment_session_id, cf_order_id, order_id } = response.data;
+      const { order_id, razorpay_order_id, razorpay_key_id, amount: amountPaise } = response.data;
       
-      // Initialize Cashfree checkout
-      if (window.Cashfree) {
-        try {
-          const cashfree = window.Cashfree({ mode: "sandbox" });
-          const checkoutOptions = {
-            paymentSessionId: payment_session_id,
-            redirectTarget: "_self"
-          };
-          await cashfree.checkout(checkoutOptions);
-        } catch (checkoutError) {
-          console.error("Cashfree checkout error:", checkoutError);
-          // Fallback to direct redirect
-          toast.info("Opening payment page...");
-          window.location.href = `/payment/callback?order_id=${order_id}`;
-        }
+      // Initialize Razorpay checkout
+      if (window.Razorpay) {
+        const options = {
+          key: razorpay_key_id,
+          amount: amountPaise,
+          currency: "INR",
+          name: "FundFlow",
+          description: `Donation for: ${collection.title}`,
+          order_id: razorpay_order_id,
+          handler: async function (razorpayResponse) {
+            // Verify payment on server
+            try {
+              const verifyResponse = await axios.post(`${API}/payments/verify-razorpay`, {
+                razorpay_order_id: razorpayResponse.razorpay_order_id,
+                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                razorpay_signature: razorpayResponse.razorpay_signature
+              });
+              
+              if (verifyResponse.data.status === "success") {
+                window.location.href = `/payment/callback?order_id=${order_id}&status=success`;
+              } else {
+                window.location.href = `/payment/callback?order_id=${order_id}&status=failed`;
+              }
+            } catch (verifyError) {
+              console.error("Payment verification error:", verifyError);
+              window.location.href = `/payment/callback?order_id=${order_id}&status=pending`;
+            }
+          },
+          prefill: {
+            name: donorName,
+            email: donorEmail,
+            contact: donorPhone
+          },
+          notes: {
+            collection_id: id,
+            donor_name: donorName
+          },
+          theme: {
+            color: "#FF5F00"
+          },
+          modal: {
+            ondismiss: function() {
+              setDonationLoading(false);
+              toast.info("Payment cancelled");
+            }
+          }
+        };
+
+        const razorpay = new window.Razorpay(options);
+        razorpay.on('payment.failed', function (response) {
+          console.error("Payment failed:", response.error);
+          window.location.href = `/payment/callback?order_id=${order_id}&status=failed`;
+        });
+        razorpay.open();
       } else {
-        // SDK not loaded, show toast and redirect to callback
-        toast.info("Payment gateway loading... Redirecting...");
-        // Give user a moment then redirect
-        setTimeout(() => {
-          window.location.href = `/payment/callback?order_id=${order_id}`;
-        }, 1500);
+        // SDK not loaded
+        toast.error("Payment gateway not loaded. Please refresh and try again.");
+        setDonationLoading(false);
       }
     } catch (error) {
       console.error("Error creating payment:", error);
       toast.error(error.response?.data?.detail || "Failed to initiate payment");
-    } finally {
       setDonationLoading(false);
     }
   };
