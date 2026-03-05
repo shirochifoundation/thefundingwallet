@@ -569,7 +569,7 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
         }
         
         # Create Razorpay Smart Collect Virtual Account
-        virtual_account = await create_virtual_account(collection_id, collection.title)
+        virtual_account = await create_virtual_account(collection_id, collection.title, collection.organizer_email)
         if virtual_account:
             # Extract bank account and VPA details
             receivers = virtual_account.get("receivers", [])
