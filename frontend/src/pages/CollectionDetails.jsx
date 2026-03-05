@@ -607,7 +607,7 @@ export default function CollectionDetails() {
                 </Button>
 
                 <p className="text-xs text-zinc-500 text-center">
-                  Secured by Cashfree Payment Gateway
+                  Secured by Razorpay Payment Gateway
                 </p>
               </form>
             </div>
