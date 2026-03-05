@@ -421,11 +421,52 @@ async def get_me(current_user: dict = Depends(get_required_user)):
 
 
 # ==================== SMART COLLECT FUNCTIONS ====================
-async def create_virtual_account(collection_id: str, collection_title: str) -> dict:
+async def create_razorpay_customer(name: str, email: str, contact: str = None) -> str:
+    """Create a Razorpay customer and return the customer_id"""
+    try:
+        url = f"{RAZORPAY_API_URL}/customers"
+        
+        payload = {
+            "name": name,
+            "email": email,
+        }
+        if contact:
+            payload["contact"] = contact
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
+            
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response_data = await resp.json()
+                
+                if resp.status not in [200, 201]:
+                    logger.error(f"Failed to create customer: {response_data}")
+                    return None
+                
+                customer_id = response_data.get("id")
+                logger.info(f"Razorpay customer created: {customer_id}")
+                return customer_id
+                
+    except Exception as e:
+        logger.error(f"Error creating customer: {str(e)}")
+        return None
+
+
+async def create_virtual_account(collection_id: str, collection_title: str, organizer_email: str = None) -> dict:
     """Create a Razorpay Smart Collect Virtual Account for a collection"""
     try:
-        # Create a unique descriptor for the VPA (max 20 chars, alphanumeric)
-        vpa_descriptor = f"fund{collection_id[:8].replace('-', '')}"
+        # First create a customer for this collection
+        customer_name = f"FundFlow - {collection_title[:30]}"
+        customer_email = organizer_email or f"collection-{collection_id[:8]}@fundflow.app"
+        
+        customer_id = await create_razorpay_customer(customer_name, customer_email)
+        if not customer_id:
+            logger.error("Could not create Razorpay customer for virtual account")
+            return None
         
         # Smart Collect API endpoint
         url = f"{RAZORPAY_API_URL}/virtual_accounts"
@@ -435,7 +476,7 @@ async def create_virtual_account(collection_id: str, collection_title: str) -> d
                 "types": ["bank_account", "vpa"]
             },
             "description": f"FundFlow: {collection_title[:50]}",
-            "customer_id": None,  # Can link to Razorpay customer if needed
+            "customer_id": customer_id,
             "close_by": None,  # No expiry - will close manually when collection ends
             "notes": {
                 "collection_id": collection_id,
