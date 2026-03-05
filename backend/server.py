@@ -422,7 +422,7 @@ async def get_me(current_user: dict = Depends(get_required_user)):
 
 # ==================== SMART COLLECT FUNCTIONS ====================
 async def create_razorpay_customer(name: str, email: str, contact: str = None) -> str:
-    """Create a Razorpay customer and return the customer_id"""
+    """Create a Razorpay customer and return the customer_id. Returns existing customer if already exists."""
     try:
         url = f"{RAZORPAY_API_URL}/customers"
         
@@ -443,13 +443,38 @@ async def create_razorpay_customer(name: str, email: str, contact: str = None) -
             async with session.post(url, json=payload, headers=headers) as resp:
                 response_data = await resp.json()
                 
-                if resp.status not in [200, 201]:
-                    logger.error(f"Failed to create customer: {response_data}")
-                    return None
+                if resp.status in [200, 201]:
+                    customer_id = response_data.get("id")
+                    logger.info(f"Razorpay customer created: {customer_id}")
+                    return customer_id
                 
-                customer_id = response_data.get("id")
-                logger.info(f"Razorpay customer created: {customer_id}")
-                return customer_id
+                # Check if customer already exists
+                error = response_data.get("error", {})
+                if "already exists" in error.get("description", "").lower():
+                    # Try to find existing customer by email
+                    logger.info(f"Customer already exists for {email}, searching...")
+                    search_url = f"{RAZORPAY_API_URL}/customers"
+                    async with session.get(search_url, headers=headers) as search_resp:
+                        if search_resp.status == 200:
+                            customers_data = await search_resp.json()
+                            items = customers_data.get("items", [])
+                            for customer in items:
+                                if customer.get("email") == email:
+                                    logger.info(f"Found existing customer: {customer.get('id')}")
+                                    return customer.get("id")
+                    
+                    # If we can't find by email, create with unique email
+                    unique_email = f"{email.split('@')[0]}+{uuid.uuid4().hex[:6]}@{email.split('@')[1]}" if '@' in email else f"user-{uuid.uuid4().hex[:8]}@fundflow.app"
+                    payload["email"] = unique_email
+                    async with session.post(url, json=payload, headers=headers) as retry_resp:
+                        retry_data = await retry_resp.json()
+                        if retry_resp.status in [200, 201]:
+                            customer_id = retry_data.get("id")
+                            logger.info(f"Created customer with unique email: {customer_id}")
+                            return customer_id
+                
+                logger.error(f"Failed to create customer: {response_data}")
+                return None
                 
     except Exception as e:
         logger.error(f"Error creating customer: {str(e)}")
