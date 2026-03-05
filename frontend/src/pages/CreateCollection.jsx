@@ -137,7 +137,7 @@ export default function CreateCollection() {
         title,
         description,
         category,
-        goal_amount: parseFloat(goalAmount),
+        goal_amount: goalAmount ? parseFloat(goalAmount) : null,
         visibility,
         deadline: deadline ? deadline.toISOString() : null,
         organizer_name: organizerName,
