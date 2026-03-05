@@ -527,6 +527,7 @@ async def create_virtual_account(collection_id: str, collection_title: str, orga
                     return None
                 
                 logger.info(f"Virtual account created for collection {collection_id}: {response_data.get('id')}")
+                logger.info(f"Virtual account full response: {json.dumps(response_data)}")
                 return response_data
                 
     except Exception as e:
