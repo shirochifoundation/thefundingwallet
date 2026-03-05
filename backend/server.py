@@ -37,6 +37,9 @@ razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 # Razorpay API base URL
 RAZORPAY_API_URL = "https://api.razorpay.com/v1"
 
+# RazorpayX Payout Account Number (your business account)
+RAZORPAYX_ACCOUNT_NUMBER = os.environ.get('RAZORPAYX_ACCOUNT_NUMBER', '')
+
 # Cashfree Payout V2 configuration (for withdrawals)
 CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
 CASHFREE_PAYOUT_CLIENT_ID = os.environ.get('CASHFREE_PAYOUT_CLIENT_ID')
