@@ -285,61 +285,76 @@ export default function AdminPage() {
 
         {/* Stats Cards */}
         {dashboard && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-500">Total Users</p>
-                    <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                    <p className="text-sm text-blue-600">Total Users</p>
+                    <p className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
                       {dashboard.total_users}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-amber-600" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-500">Pending KYC</p>
-                    <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                    <p className="text-sm text-amber-600">Pending KYC</p>
+                    <p className="text-2xl font-bold text-amber-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
                       {dashboard.pending_kyc}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-100">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-500">Total Withdrawn</p>
-                    <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                    <p className="text-sm text-purple-600">Pending Withdrawals</p>
+                    <p className="text-2xl font-bold text-purple-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                      {dashboard.pending_withdrawals || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-emerald-600">Total Withdrawn</p>
+                    <p className="text-2xl font-bold text-emerald-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
                       {formatAmount(dashboard.total_withdrawn)}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-100">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FF5F00]/10 flex items-center justify-center">
-                    <IndianRupee className="w-5 h-5 text-[#FF5F00]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#FF5F00] flex items-center justify-center">
+                    <IndianRupee className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-500">Platform Fees</p>
-                    <p className="text-2xl font-bold" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                    <p className="text-sm text-orange-600">Platform Fees</p>
+                    <p className="text-2xl font-bold text-orange-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
                       {formatAmount(dashboard.total_platform_fees)}
                     </p>
                   </div>
