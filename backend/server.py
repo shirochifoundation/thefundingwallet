@@ -1332,36 +1332,181 @@ async def get_kyc_status(current_user: dict = Depends(get_required_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== WITHDRAWAL ENDPOINTS ====================
+# ==================== WITHDRAWAL ENDPOINTS (RazorpayX Payouts) ====================
 
-# Cashfree Payout Fund Source ID
-# Cashfree Payout Fund Source ID
-CASHFREE_FUNDSOURCE_ID = os.environ.get('CASHFREE_FUNDSOURCE_ID', 'CASHFREE_422178')
-
-
-async def get_existing_beneficiary_v2(bank_account: str = None, bank_ifsc: str = None, vpa: str = None):
-    """Get existing beneficiary by bank account or VPA using V2 API"""
+async def create_razorpayx_contact(name: str, email: str, phone: str, contact_type: str = "vendor") -> tuple:
+    """Create a RazorpayX contact for payouts"""
     try:
-        headers = {
-            "Content-Type": "application/json",
-            "x-client-id": CASHFREE_PAYOUT_CLIENT_ID,
-            "x-client-secret": CASHFREE_PAYOUT_SECRET_KEY,
-            "x-api-version": "2024-01-01"
+        url = f"{RAZORPAY_API_URL}/contacts"
+        
+        payload = {
+            "name": name,
+            "email": email,
+            "contact": phone,
+            "type": contact_type,
+            "reference_id": f"contact_{uuid.uuid4().hex[:12]}"
         }
         
         async with aiohttp.ClientSession() as session:
-            if vpa:
-                url = f"{CASHFREE_PAYOUT_BASE_URL}/beneficiary?vpa={vpa}"
-            else:
-                url = f"{CASHFREE_PAYOUT_BASE_URL}/beneficiary?bank_account_number={bank_account}&bank_ifsc={bank_ifsc}"
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
             
-            async with session.get(url, headers=headers) as resp:
-                if resp.status == 200:
-                    result = await resp.json()
-                    return result.get("beneficiary_id"), None
-                return None, None
+            async with session.post(url, json=payload, headers=headers) as resp:
+                result = await resp.json()
+                
+                if resp.status in [200, 201]:
+                    contact_id = result.get("id")
+                    logger.info(f"RazorpayX contact created: {contact_id}")
+                    return contact_id, None
+                else:
+                    error = result.get("error", {})
+                    error_msg = error.get("description", "Failed to create contact")
+                    logger.error(f"RazorpayX contact creation failed: {result}")
+                    return None, error_msg
+                    
     except Exception as e:
-        logger.error(f"Get existing beneficiary error: {str(e)}")
+        logger.error(f"RazorpayX contact error: {str(e)}")
+        return None, str(e)
+
+
+async def create_razorpayx_fund_account(contact_id: str, payout_mode: str, kyc: dict) -> tuple:
+    """Create a RazorpayX fund account (bank or VPA) for a contact"""
+    try:
+        url = f"{RAZORPAY_API_URL}/fund_accounts"
+        
+        if payout_mode == "upi":
+            payload = {
+                "contact_id": contact_id,
+                "account_type": "vpa",
+                "vpa": {
+                    "address": kyc.get("upi", {}).get("vpa")
+                }
+            }
+        else:
+            payload = {
+                "contact_id": contact_id,
+                "account_type": "bank_account",
+                "bank_account": {
+                    "name": kyc.get("bank_account_holder") or kyc.get("bank_account", {}).get("holder_name", "Account Holder"),
+                    "ifsc": kyc.get("bank_account", {}).get("ifsc"),
+                    "account_number": kyc.get("bank_account", {}).get("number")
+                }
+            }
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
+            
+            async with session.post(url, json=payload, headers=headers) as resp:
+                result = await resp.json()
+                
+                if resp.status in [200, 201]:
+                    fund_account_id = result.get("id")
+                    logger.info(f"RazorpayX fund account created: {fund_account_id}")
+                    return fund_account_id, None
+                else:
+                    error = result.get("error", {})
+                    error_msg = error.get("description", "Failed to create fund account")
+                    logger.error(f"RazorpayX fund account creation failed: {result}")
+                    return None, error_msg
+                    
+    except Exception as e:
+        logger.error(f"RazorpayX fund account error: {str(e)}")
+        return None, str(e)
+
+
+async def process_razorpayx_payout(withdrawal_id: str, net_amount: float, payout_mode: str, kyc: dict, beneficiary_name: str, user_id: str):
+    """Process payout via RazorpayX Payouts API"""
+    try:
+        if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+            logger.warning("Razorpay keys not configured, skipping actual payout")
+            return None, "Razorpay keys not configured"
+        
+        # Get user details
+        user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not user_doc:
+            return None, "User not found"
+        
+        # Step 1: Create Contact
+        contact_name = beneficiary_name or kyc.get("bank_account_holder", user_doc.get("name", "User"))
+        contact_id, contact_error = await create_razorpayx_contact(
+            name=contact_name,
+            email=user_doc.get("email", "user@example.com"),
+            phone=user_doc.get("phone", "9999999999")
+        )
+        
+        if contact_error:
+            return None, f"Contact creation failed: {contact_error}"
+        
+        # Step 2: Create Fund Account
+        fund_account_id, fa_error = await create_razorpayx_fund_account(
+            contact_id=contact_id,
+            payout_mode=payout_mode,
+            kyc=kyc
+        )
+        
+        if fa_error:
+            return None, f"Fund account creation failed: {fa_error}"
+        
+        # Step 3: Create Payout
+        url = f"{RAZORPAY_API_URL}/payouts"
+        
+        # Generate idempotency key (required from March 2025)
+        idempotency_key = f"payout_{withdrawal_id}"
+        
+        # Amount in paise
+        amount_paise = int(net_amount * 100)
+        
+        # Determine mode
+        mode = "UPI" if payout_mode == "upi" else "IMPS"
+        
+        payload = {
+            "account_number": RAZORPAYX_ACCOUNT_NUMBER,
+            "fund_account_id": fund_account_id,
+            "amount": amount_paise,
+            "currency": "INR",
+            "mode": mode,
+            "purpose": "payout",
+            "queue_if_low_balance": True,
+            "reference_id": withdrawal_id[:40],
+            "narration": f"FundFlow Withdrawal - {withdrawal_id[:12]}"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}",
+                "X-Payout-Idempotency": idempotency_key
+            }
+            
+            async with session.post(url, json=payload, headers=headers) as resp:
+                result = await resp.json()
+                logger.info(f"RazorpayX Payout response for {withdrawal_id}: {result}")
+                
+                if resp.status in [200, 201]:
+                    payout_id = result.get("id")
+                    status = result.get("status")
+                    
+                    if status in ["processing", "processed", "queued"]:
+                        logger.info(f"RazorpayX payout initiated: {payout_id} - Status: {status}")
+                        return payout_id, None
+                    else:
+                        return payout_id, f"Payout status: {status}"
+                else:
+                    error = result.get("error", {})
+                    error_msg = error.get("description", "Payout failed")
+                    logger.error(f"RazorpayX payout failed: {result}")
+                    return None, error_msg
+                    
+    except Exception as e:
+        logger.error(f"RazorpayX Payout error: {str(e)}")
         return None, str(e)
 
 
