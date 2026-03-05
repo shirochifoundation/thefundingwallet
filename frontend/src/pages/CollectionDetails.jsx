@@ -797,6 +797,7 @@ export default function CollectionDetails() {
                   Secured by Razorpay Payment Gateway
                 </p>
               </form>
+              )}
             </div>
           </TabsContent>
 
