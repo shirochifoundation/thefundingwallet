@@ -908,6 +908,157 @@ async def payment_webhook(request: Request):
         return {"status": "error", "message": str(e)}
 
 
+# ==================== SMART COLLECT WEBHOOK ====================
+@api_router.post("/webhooks/smart-collect")
+async def smart_collect_webhook(request: Request):
+    """Handle Razorpay Smart Collect Virtual Account payment webhooks"""
+    try:
+        body = await request.body()
+        payload = json.loads(body)
+        
+        event_type = payload.get("event")
+        logger.info(f"Smart Collect webhook received: {event_type}")
+        
+        # Handle virtual_account.credited event
+        if event_type == "virtual_account.credited":
+            va_entity = payload.get("payload", {}).get("virtual_account", {}).get("entity", {})
+            payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+            
+            virtual_account_id = va_entity.get("id")
+            amount_paise = payment_entity.get("amount", 0)
+            amount = amount_paise / 100  # Convert to rupees
+            payment_id = payment_entity.get("id")
+            
+            # Get collection notes to find collection_id
+            notes = va_entity.get("notes", {})
+            collection_id = notes.get("collection_id")
+            
+            if not collection_id:
+                # Try to find collection by virtual_account.id
+                collection = await db.collections.find_one(
+                    {"virtual_account.id": virtual_account_id}, 
+                    {"_id": 0}
+                )
+                if collection:
+                    collection_id = collection.get("id")
+            
+            if not collection_id:
+                logger.warning(f"Smart Collect payment for unknown virtual account: {virtual_account_id}")
+                return {"status": "ignored", "reason": "Collection not found"}
+            
+            now = datetime.now(timezone.utc).isoformat()
+            
+            # Extract payer details
+            payer_bank = payment_entity.get("bank", "Unknown")
+            payer_account = payment_entity.get("bank_reference") or payment_entity.get("acquirer_data", {}).get("bank_transaction_id", "")
+            method = payment_entity.get("method", "bank_transfer")
+            
+            # Check if this payment already exists (prevent duplicates)
+            existing = await db.donations.find_one({"razorpay_payment_id": payment_id})
+            if existing:
+                logger.info(f"Smart Collect payment already processed: {payment_id}")
+                return {"status": "already_processed"}
+            
+            # Create donation record
+            donation_doc = {
+                "id": str(uuid.uuid4()),
+                "collection_id": collection_id,
+                "order_id": f"sc_{payment_id[-12:]}",  # Smart Collect order ID
+                "razorpay_payment_id": payment_id,
+                "donor_name": f"Bank Transfer ({payer_bank})",
+                "donor_email": None,
+                "donor_phone": None,
+                "amount": amount,
+                "message": f"Via {method.upper()} - Ref: {payer_account}",
+                "anonymous": True,  # Bank transfers are anonymous
+                "status": PaymentStatus.SUCCESS.value,
+                "payment_method": method,
+                "payment_type": "smart_collect",
+                "created_at": now,
+                "updated_at": now
+            }
+            
+            await db.donations.insert_one(donation_doc)
+            
+            # Update collection amount
+            await db.collections.update_one(
+                {"id": collection_id},
+                {
+                    "$inc": {"current_amount": amount, "donor_count": 1},
+                    "$set": {"updated_at": now}
+                }
+            )
+            
+            logger.info(f"Smart Collect payment SUCCESS: ₹{amount} for collection {collection_id}")
+            return {"status": "processed", "amount": amount, "collection_id": collection_id}
+        
+        return {"status": "ignored", "reason": f"Unhandled event: {event_type}"}
+        
+    except Exception as e:
+        logger.error(f"Smart Collect webhook error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+# ==================== VIRTUAL ACCOUNT ENDPOINT ====================
+@api_router.get("/collections/{collection_id}/virtual-account")
+async def get_virtual_account(collection_id: str):
+    """Get virtual account details for a collection (for donors to make transfers)"""
+    try:
+        collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+        if not collection:
+            raise HTTPException(status_code=404, detail="Collection not found")
+        
+        virtual_account = collection.get("virtual_account")
+        if not virtual_account:
+            # Try to create one if it doesn't exist
+            virtual_account_data = await create_virtual_account(collection_id, collection.get("title", ""))
+            if virtual_account_data:
+                receivers = virtual_account_data.get("receivers", [])
+                bank_account = None
+                vpa = None
+                
+                for receiver in receivers:
+                    if receiver.get("entity") == "bank_account":
+                        bank_account = {
+                            "account_number": receiver.get("bank_account", {}).get("account_number"),
+                            "ifsc": receiver.get("bank_account", {}).get("ifsc"),
+                            "bank_name": receiver.get("bank_account", {}).get("bank_name"),
+                            "name": receiver.get("bank_account", {}).get("name")
+                        }
+                    elif receiver.get("entity") == "vpa":
+                        vpa = {
+                            "address": receiver.get("vpa", {}).get("address"),
+                            "handle": receiver.get("vpa", {}).get("handle")
+                        }
+                
+                virtual_account = {
+                    "id": virtual_account_data.get("id"),
+                    "status": virtual_account_data.get("status"),
+                    "bank_account": bank_account,
+                    "vpa": vpa,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.collections.update_one(
+                    {"id": collection_id},
+                    {"$set": {"virtual_account": virtual_account}}
+                )
+            else:
+                raise HTTPException(status_code=500, detail="Could not create virtual account")
+        
+        return {
+            "collection_id": collection_id,
+            "collection_title": collection.get("title"),
+            "virtual_account": virtual_account
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting virtual account: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== RAZORPAY PAYMENT VERIFICATION ====================
 class RazorpayPaymentVerify(BaseModel):
     razorpay_order_id: str
