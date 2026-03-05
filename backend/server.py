@@ -40,12 +40,6 @@ RAZORPAY_API_URL = "https://api.razorpay.com/v1"
 # RazorpayX Payout Account Number (your business account)
 RAZORPAYX_ACCOUNT_NUMBER = os.environ.get('RAZORPAYX_ACCOUNT_NUMBER', '')
 
-# Cashfree Payout V2 configuration (for withdrawals)
-CASHFREE_ENVIRONMENT = os.environ.get('CASHFREE_ENVIRONMENT', 'SANDBOX')
-CASHFREE_PAYOUT_CLIENT_ID = os.environ.get('CASHFREE_PAYOUT_CLIENT_ID')
-CASHFREE_PAYOUT_SECRET_KEY = os.environ.get('CASHFREE_PAYOUT_SECRET_KEY')
-CASHFREE_PAYOUT_BASE_URL = "https://sandbox.cashfree.com/payout" if CASHFREE_ENVIRONMENT == 'SANDBOX' else "https://api.cashfree.com/payout"
-
 # Admin credentials (for demo - in production use proper auth)
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@fundflow.com')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
