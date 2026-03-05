@@ -472,7 +472,9 @@ export default function CreateCollection() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Goal Amount</span>
-                  <span className="font-medium text-[#0a0a0a]">₹{parseFloat(goalAmount || 0).toLocaleString('en-IN')}</span>
+                  <span className="font-medium text-[#0a0a0a]">
+                    {goalAmount ? `₹${parseFloat(goalAmount).toLocaleString('en-IN')}` : 'No target set'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Visibility</span>
