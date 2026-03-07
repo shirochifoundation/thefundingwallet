@@ -1466,8 +1466,8 @@ async def process_razorpayx_payout(withdrawal_id: str, net_amount: float, payout
         # Step 3: Create Payout
         url = f"{RAZORPAY_API_URL}/payouts"
         
-        # Generate idempotency key (required from March 2025)
-        idempotency_key = f"payout_{withdrawal_id}"
+        # Generate idempotency key (max 36 chars)
+        idempotency_key = f"po_{withdrawal_id[:33]}"
         
         # Amount in paise
         amount_paise = int(net_amount * 100)
