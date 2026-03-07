@@ -15,6 +15,10 @@ import RegisterPage from "@/pages/RegisterPage";
 import MyCollectionsPage from "@/pages/MyCollectionsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminPage from "@/pages/AdminPage";
+import ContactPage from "@/pages/ContactPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import RefundPage from "@/pages/RefundPage";
 import { Loader2 } from "lucide-react";
 
 // Protected Route component
