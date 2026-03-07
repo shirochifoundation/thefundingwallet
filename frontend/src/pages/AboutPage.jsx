@@ -55,17 +55,17 @@ export default function AboutPage() {
     {
       icon: Zap,
       title: "Quick Setup",
-      desc: "Create a collection in under 2 minutes. Share the link and start receiving funds."
+      desc: "Create a fund pool in under 2 minutes. Share the link and start receiving contributions instantly."
     },
     {
       icon: Shield,
       title: "Secure Payments",
-      desc: "Bank-grade security with Cashfree. Your money is safe and traceable."
+      desc: "Bank-grade security with Razorpay. Every transaction is safe, tracked, and transparent."
     },
     {
       icon: Users,
       title: "Easy Sharing",
-      desc: "Public or private collections. Share via WhatsApp, Email, or any platform."
+      desc: "Share via WhatsApp, Email, or Slack. Track contributions in real-time with automatic updates."
     },
   ];
 
