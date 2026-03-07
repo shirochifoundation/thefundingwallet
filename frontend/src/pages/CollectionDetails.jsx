@@ -487,7 +487,7 @@ export default function CollectionDetails() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="pl-12 h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
-                      min="10"
+                      min="1"
                       required
                       data-testid="custom-amount-input"
                     />
