@@ -148,10 +148,10 @@ export default function AboutPage() {
               className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-4"
               style={{ fontFamily: 'Bricolage Grotesque' }}
             >
-              Perfect for Every Occasion
+              Social & Corporate Use Cases
             </h2>
             <p className="text-zinc-600 max-w-2xl mx-auto">
-              Whether it's a joyful celebration or urgent need, FundFlow makes collecting funds simple.
+              From corporate team events to social gatherings, FundFlow makes pooling funds effortless.
             </p>
           </div>
 
