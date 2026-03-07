@@ -1466,10 +1466,10 @@ async def process_razorpayx_payout(withdrawal_id: str, net_amount: float, payout
         # Step 3: Create Payout
         url = f"{RAZORPAY_API_URL}/payouts"
         
-        # Generate unique idempotency key (max 36 chars) with timestamp
+        # Generate unique idempotency key (max 36 chars)
         import time
-        ts = int(time.time()) % 100000  # Last 5 digits of timestamp
-        idempotency_key = f"po_{withdrawal_id[:28]}_{ts}"
+        ts = int(time.time()) % 10000  # Last 4 digits of timestamp
+        idempotency_key = f"po{withdrawal_id[:28]}{ts}"  # 2 + 28 + 4 = 34 chars
         
         # Amount in paise
         amount_paise = int(net_amount * 100)
