@@ -178,6 +178,33 @@ export const Layout = ({ children }) => {
                     About Us
                   </Link>
                 </li>
+                <li>
+                  <Link to="/contact" className="text-zinc-400 hover:text-white transition-colors">
+                    Contact Us
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque' }}>Legal</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/terms" className="text-zinc-400 hover:text-white transition-colors">
+                    Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/privacy" className="text-zinc-400 hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/refund" className="text-zinc-400 hover:text-white transition-colors">
+                    Refund & Cancellation
+                  </Link>
+                </li>
               </ul>
             </div>
 
