@@ -43,12 +43,12 @@ export default function AboutPage() {
   };
 
   const useCases = [
-    { icon: PartyPopper, title: "Celebrations", desc: "Birthday, farewell, team parties" },
-    { icon: Heart, title: "Medical Emergency", desc: "Help friends & family in need" },
-    { icon: Sparkles, title: "Festivals", desc: "Ganesh Utsav, Navratri & more" },
-    { icon: Home, title: "Society Funds", desc: "Maintenance & community projects" },
-    { icon: HandHeart, title: "Social Causes", desc: "Tree plantation, charity drives" },
-    { icon: Briefcase, title: "Office Events", desc: "Team lunch, outings & celebrations" },
+    { icon: Briefcase, title: "Corporate Events", desc: "Team lunch, outings & offsites" },
+    { icon: PartyPopper, title: "Office Celebrations", desc: "Birthday, farewell, promotions" },
+    { icon: Sparkles, title: "Festival Events", desc: "Diwali, Holi, Christmas parties" },
+    { icon: Home, title: "Society Activities", desc: "Community events & functions" },
+    { icon: Heart, title: "Social Causes", desc: "Charity drives & donations" },
+    { icon: HandHeart, title: "Group Gifting", desc: "Collective gifts for colleagues" },
   ];
 
   const features = [
