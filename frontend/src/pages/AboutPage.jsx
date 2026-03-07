@@ -127,10 +127,14 @@ export default function AboutPage() {
             >
               Our Mission
             </h2>
+            <p className="text-lg text-zinc-600 leading-relaxed mb-6">
+              FundFlow is an <strong>Event Fund Pooling Platform</strong> designed for <strong>Social & Corporate Activities</strong>. 
+              We simplify the process of collecting contributions from groups for any occasion – whether it's an office party, 
+              team outing, festival celebration, or community event.
+            </p>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              FundFlow was created with a simple mission: to make collecting funds from groups as easy as sending a message. 
-              Whether you're organizing a birthday party, helping someone in a medical emergency, or collecting society maintenance fees, 
-              we believe the process should be seamless, transparent, and secure.
+              Our platform eliminates the hassle of tracking who paid, managing spreadsheets, and chasing payments. 
+              With FundFlow, organizers can focus on planning great events while we handle the fund collection seamlessly and transparently.
             </p>
           </div>
         </div>
