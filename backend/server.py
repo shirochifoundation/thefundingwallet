@@ -1486,7 +1486,7 @@ async def process_razorpayx_payout(withdrawal_id: str, net_amount: float, payout
             "purpose": "payout",
             "queue_if_low_balance": True,
             "reference_id": withdrawal_id[:36],
-            "narration": f"FundFlow-{withdrawal_id[:20]}"
+            "narration": "FundFlow Payout"
         }
         
         async with aiohttp.ClientSession() as session:
