@@ -21,11 +21,7 @@ import {
   CheckCircle,
   User,
   MessageSquare,
-  IndianRupee,
-  Building2,
-  Smartphone,
-  CreditCard,
-  QrCode
+  IndianRupee
 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
