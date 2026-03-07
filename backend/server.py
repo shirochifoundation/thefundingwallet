@@ -1372,23 +1372,38 @@ async def create_razorpayx_fund_account(contact_id: str, payout_mode: str, kyc: 
         url = f"{RAZORPAY_API_URL}/fund_accounts"
         
         if payout_mode == "upi":
+            # Get UPI ID from KYC - handle different possible field names
+            upi_address = kyc.get("upi_id") or kyc.get("upi", {}).get("vpa") or kyc.get("upi", {}).get("address")
+            if not upi_address:
+                return None, "UPI ID not found in KYC"
+            
             payload = {
                 "contact_id": contact_id,
                 "account_type": "vpa",
                 "vpa": {
-                    "address": kyc.get("upi", {}).get("vpa")
+                    "address": upi_address
                 }
             }
+            logger.info(f"Creating VPA fund account with address: {upi_address}")
         else:
+            # Get bank details from KYC - handle different possible field names
+            account_number = kyc.get("bank_account_number") or kyc.get("bank_account", {}).get("number")
+            ifsc = kyc.get("bank_ifsc") or kyc.get("bank_account", {}).get("ifsc")
+            holder_name = kyc.get("bank_account_holder") or kyc.get("bank_account", {}).get("holder_name", "Account Holder")
+            
+            if not account_number or not ifsc:
+                return None, "Bank account details not found in KYC"
+            
             payload = {
                 "contact_id": contact_id,
                 "account_type": "bank_account",
                 "bank_account": {
-                    "name": kyc.get("bank_account_holder") or kyc.get("bank_account", {}).get("holder_name", "Account Holder"),
-                    "ifsc": kyc.get("bank_account", {}).get("ifsc"),
-                    "account_number": kyc.get("bank_account", {}).get("number")
+                    "name": holder_name,
+                    "ifsc": ifsc,
+                    "account_number": account_number
                 }
             }
+            logger.info(f"Creating bank fund account: XXXX{account_number[-4:]} ({ifsc})")
         
         async with aiohttp.ClientSession() as session:
             auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
