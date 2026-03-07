@@ -491,187 +491,41 @@ export default function CollectionDetails() {
                 Make a Donation
               </h2>
 
-              {/* Payment Method Tabs */}
-              <div className="flex gap-2 mb-6">
-                <Button
-                  type="button"
-                  variant={paymentMethod === "bank" ? "default" : "outline"}
-                  className={`flex-1 h-12 rounded-xl gap-2 ${paymentMethod === "bank" ? 'bg-[#002FA7] text-white' : 'border-zinc-200'}`}
-                  onClick={() => setPaymentMethod("bank")}
-                  data-testid="payment-method-bank"
-                >
-                  <Building2 className="w-4 h-4" />
-                  Bank/UPI Transfer
-                </Button>
-                <Button
-                  type="button"
-                  variant={paymentMethod === "card" ? "default" : "outline"}
-                  className={`flex-1 h-12 rounded-xl gap-2 ${paymentMethod === "card" ? 'bg-[#002FA7] text-white' : 'border-zinc-200'}`}
-                  onClick={() => setPaymentMethod("card")}
-                  data-testid="payment-method-card"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Card/UPI App
-                </Button>
-              </div>
-
-              {/* Bank/UPI Transfer Option (Smart Collect) */}
-              {paymentMethod === "bank" && (
-                <div className="space-y-6">
-                  {loadingVA ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="w-8 h-8 animate-spin text-[#002FA7]" />
-                    </div>
-                  ) : virtualAccount ? (
-                    <>
-                      {/* Bank Account Details */}
-                      {virtualAccount.bank_account && (
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-[#002FA7] flex items-center justify-center">
-                              <Building2 className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-[#0a0a0a]">Bank Transfer</h3>
-                              <p className="text-sm text-zinc-500">NEFT / IMPS / RTGS</p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center bg-white/70 rounded-lg p-3">
-                              <div>
-                                <p className="text-xs text-zinc-500 uppercase">Account Number</p>
-                                <p className="font-mono font-bold text-[#0a0a0a]">{virtualAccount.bank_account.account_number}</p>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(virtualAccount.bank_account.account_number, "Account number")}
-                                className="text-[#002FA7]"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            
-                            <div className="flex justify-between items-center bg-white/70 rounded-lg p-3">
-                              <div>
-                                <p className="text-xs text-zinc-500 uppercase">IFSC Code</p>
-                                <p className="font-mono font-bold text-[#0a0a0a]">{virtualAccount.bank_account.ifsc}</p>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(virtualAccount.bank_account.ifsc, "IFSC code")}
-                                className="text-[#002FA7]"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            
-                            <div className="bg-white/70 rounded-lg p-3">
-                              <p className="text-xs text-zinc-500 uppercase">Bank Name</p>
-                              <p className="font-medium text-[#0a0a0a]">{virtualAccount.bank_account.bank_name || "RazorpayX"}</p>
-                            </div>
-                            
-                            <div className="bg-white/70 rounded-lg p-3">
-                              <p className="text-xs text-zinc-500 uppercase">Beneficiary Name</p>
-                              <p className="font-medium text-[#0a0a0a]">{virtualAccount.bank_account.name || collection.title}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* UPI Details */}
-                      {virtualAccount.vpa && (
-                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
-                              <Smartphone className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-[#0a0a0a]">UPI Transfer</h3>
-                              <p className="text-sm text-zinc-500">Google Pay / PhonePe / BHIM</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between items-center bg-white/70 rounded-lg p-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-zinc-500 uppercase">UPI ID</p>
-                              <p className="font-mono font-bold text-[#0a0a0a] truncate">{virtualAccount.vpa.address}</p>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(virtualAccount.vpa.address, "UPI ID")}
-                              className="text-emerald-600 ml-2"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                        <p className="text-sm text-amber-800">
-                          <strong>How it works:</strong> Transfer any amount directly to the bank account or UPI ID above. 
-                          Your donation will be automatically credited to this fundraiser within minutes.
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-8 bg-zinc-50 rounded-xl">
-                      <p className="text-zinc-500 mb-4">Bank transfer option not available for this collection.</p>
+              {/* Card/UPI App Payment Form (Razorpay Checkout) */}
+              <form onSubmit={handleDonate} className="space-y-5">
+                {/* Quick Amount Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-[#0a0a0a] mb-3">
+                    Select Amount
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {suggestedAmounts.map((amt) => (
                       <Button
+                        key={amt}
                         type="button"
-                        onClick={() => setPaymentMethod("card")}
-                        className="bg-[#002FA7]"
+                        variant={amount === String(amt) ? "default" : "outline"}
+                        className={`rounded-full ${amount === String(amt) ? 'bg-[#002FA7] text-white' : 'border-zinc-200'}`}
+                        onClick={() => setAmount(String(amt))}
+                        data-testid={`amount-${amt}`}
                       >
-                        Use Card/UPI App Instead
+                        ₹{amt.toLocaleString()}
                       </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Card/UPI App Option (Razorpay Checkout) */}
-              {paymentMethod === "card" && (
-                <form onSubmit={handleDonate} className="space-y-5">
-                  {/* Quick Amount Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-[#0a0a0a] mb-3">
-                      Select Amount
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {suggestedAmounts.map((amt) => (
-                        <Button
-                          key={amt}
-                          type="button"
-                          variant={amount === String(amt) ? "default" : "outline"}
-                          className={`rounded-full ${amount === String(amt) ? 'bg-[#002FA7] text-white' : 'border-zinc-200'}`}
-                          onClick={() => setAmount(String(amt))}
-                          data-testid={`amount-${amt}`}
-                        >
-                          ₹{amt.toLocaleString()}
-                        </Button>
-                      ))}
-                    </div>
-                    <div className="relative">
-                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                      <Input
-                        type="number"
-                        placeholder="Enter custom amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="pl-12 h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
-                        min="10"
-                        required
-                        data-testid="custom-amount-input"
-                      />
-                    </div>
+                    ))}
                   </div>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                    <Input
+                      type="number"
+                      placeholder="Enter custom amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="pl-12 h-12 rounded-xl bg-[#f5f5f7] border-transparent focus:border-[#002FA7] focus:bg-white"
+                      min="10"
+                      required
+                      data-testid="custom-amount-input"
+                    />
+                  </div>
+                </div>
 
                 {/* Donor Details */}
                 {isAuthenticated && user && (
