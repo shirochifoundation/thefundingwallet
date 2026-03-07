@@ -105,8 +105,8 @@ export default function CollectionDetails() {
       return;
     }
 
-    if (parseFloat(amount) < 10) {
-      toast.error("Minimum donation amount is ₹10");
+    if (parseFloat(amount) < 1) {
+      toast.error("Minimum donation amount is ₹1");
       return;
     }
 
