@@ -74,6 +74,9 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="bg-[#002FA7] py-16 md:py-24">
         <div className="container-main text-center">
+          <p className="text-blue-200 text-sm font-medium uppercase tracking-wider mb-4">
+            Event Fund Pooling Platform
+          </p>
           <h1 
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6"
             style={{ fontFamily: 'Bricolage Grotesque' }}
@@ -82,7 +85,8 @@ export default function AboutPage() {
             About FundFlow
           </h1>
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Empowering communities to collect funds together for celebrations, emergencies, and everything in between.
+            Your trusted platform for pooling funds for <strong>Social & Corporate Activities</strong>. 
+            From office celebrations to community events, we make group contributions seamless.
           </p>
         </div>
       </section>
