@@ -42,17 +42,10 @@ export const Layout = ({ children }) => {
             <nav className="hidden md:flex items-center gap-8">
               <Link 
                 to="/" 
-                className={`text-sm font-medium transition-colors ${isActive('/') ? 'text-[#0a0a0a]' : 'text-[#52525b] hover:text-[#0a0a0a]'}`}
+                className={`text-sm font-medium transition-colors ${isActive('/') || isActive('/browse') ? 'text-[#0a0a0a]' : 'text-[#52525b] hover:text-[#0a0a0a]'}`}
                 data-testid="nav-home"
               >
                 Home
-              </Link>
-              <Link 
-                to="/browse" 
-                className={`text-sm font-medium transition-colors ${isActive('/browse') ? 'text-[#0a0a0a]' : 'text-[#52525b] hover:text-[#0a0a0a]'}`}
-                data-testid="nav-browse"
-              >
-                Browse Collections
               </Link>
               <Link 
                 to="/about" 
