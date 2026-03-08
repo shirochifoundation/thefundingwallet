@@ -52,7 +52,7 @@ function AppRoutes() {
         <Route path="*" element={
           <Layout>
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<BrowseCollections />} />
               <Route path="/browse" element={<BrowseCollections />} />
               <Route path="/collection/:id" element={<CollectionDetails />} />
               <Route 
