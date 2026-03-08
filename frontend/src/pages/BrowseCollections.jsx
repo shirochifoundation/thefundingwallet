@@ -157,6 +157,39 @@ export default function BrowseCollections() {
             )}
           </div>
         )}
+
+        {/* Ready to Start Collecting Section */}
+        <section className="mt-16 bg-gradient-to-br from-[#002FA7] to-[#001a5c] rounded-3xl p-8 md:p-12 text-white">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 text-sm font-medium mb-4">
+                <Sparkles className="w-4 h-4" />
+                Start in 2 minutes
+              </div>
+              <h2 
+                className="text-3xl md:text-4xl font-bold mb-4"
+                style={{ fontFamily: 'Bricolage Grotesque' }}
+              >
+                Ready to Start Collecting?
+              </h2>
+              <p className="text-blue-100 text-lg max-w-xl">
+                Create your own fund pool for office events, celebrations, or any group activity. 
+                It's free to start and takes less than 2 minutes.
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <Link to="/create">
+                <Button 
+                  className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  data-testid="cta-start-collection"
+                >
+                  Start Your Collection
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
