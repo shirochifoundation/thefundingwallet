@@ -157,8 +157,8 @@ export const Layout = ({ children }) => {
               <h4 className="font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque' }}>Quick Links</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/browse" className="text-zinc-400 hover:text-white transition-colors">
-                    Browse Collections
+                  <Link to="/" className="text-zinc-400 hover:text-white transition-colors">
+                    Home
                   </Link>
                 </li>
                 <li>
