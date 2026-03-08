@@ -62,20 +62,6 @@ export default function BrowseCollections() {
   return (
     <div className="py-8 md:py-12 pb-24 md:pb-12">
       <div className="container-main">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 
-            className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3"
-            style={{ fontFamily: 'Bricolage Grotesque' }}
-            data-testid="browse-title"
-          >
-            Browse Collections
-          </h1>
-          <p className="text-zinc-600">
-            Discover and support causes that matter to you
-          </p>
-        </div>
-
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
