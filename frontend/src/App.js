@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
 import ScrollToTop from "@/components/ScrollToTop";
-import HomePage from "@/pages/HomePage";
 import BrowseCollections from "@/pages/BrowseCollections";
 import CollectionDetails from "@/pages/CollectionDetails";
 import CreateCollection from "@/pages/CreateCollection";
