@@ -32,58 +32,6 @@ export default function HomePage() {
 
   return (
     <div className="pb-20 md:pb-0">
-      {/* Hero Section */}
-      <section className="hero-gradient py-16 md:py-24 lg:py-32">
-        <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8 animate-fade-in">
-              <div className="inline-flex items-center gap-2 bg-[#FF5F00]/10 text-[#FF5F00] rounded-full px-4 py-2 text-sm font-medium">
-                <TrendingUp className="w-4 h-4" />
-                Trusted by 10,000+ groups
-              </div>
-              
-              <h1 
-                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#0a0a0a] tracking-tight leading-tight"
-                style={{ fontFamily: 'Bricolage Grotesque' }}
-                data-testid="hero-title"
-              >
-                Collect Funds
-                <span className="block text-[#002FA7]">Together, Easily</span>
-              </h1>
-              
-              <p className="text-lg text-zinc-600 max-w-lg">
-                The simplest way to collect money from friends, family, and community for any occasion. 
-                From kitty parties to medical emergencies.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/create" data-testid="hero-cta-create">
-                  <Button className="bg-[#FF5F00] hover:bg-[#E05400] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto">
-                    Start Your Collection
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link to="/browse" data-testid="hero-cta-browse">
-                  <Button variant="outline" className="border-2 border-[#002FA7] text-[#002FA7] hover:bg-[#002FA7] hover:text-white rounded-full px-8 py-6 text-lg font-medium transition-all w-full sm:w-auto">
-                    Browse Collections
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Right - Hero Image */}
-            <div className="hidden lg:block animate-fade-in stagger-2">
-              <img 
-                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"
-                alt="Friends celebrating together"
-                className="rounded-3xl shadow-2xl w-full object-cover aspect-[4/3]"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Collections */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container-main">
