@@ -31,7 +31,8 @@ import {
   Percent,
   Building2,
   Smartphone,
-  LogOut
+  LogOut,
+  RefreshCw
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -53,6 +54,7 @@ export default function AdminPage() {
   const [withdrawalModal, setWithdrawalModal] = useState({ open: false, withdrawal: null, action: "" });
   const [rejectionReason, setRejectionReason] = useState("");
   const [failureReason, setFailureReason] = useState("");
+  const [syncingId, setSyncingId] = useState(null);
 
   useEffect(() => {
     if (adminToken) {
@@ -182,6 +184,23 @@ export default function AdminPage() {
       toast.error(error.response?.data?.detail || "Failed to update settings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncWithdrawalStatus = async (withdrawalId) => {
+    setSyncingId(withdrawalId);
+    try {
+      const response = await axios.post(
+        `${API}/admin/withdrawals/${withdrawalId}/sync`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      toast.success(`Status: ${response.data.razorpay_status}. ${response.data.utr ? `UTR: ${response.data.utr}` : ''}`);
+      fetchAllData(); // Refresh data
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to sync status");
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -510,28 +529,53 @@ export default function AdminPage() {
                             <p className="text-xs text-zinc-400 mt-2">
                               Requested: {formatDate(withdrawal.created_at)}
                             </p>
+                            {withdrawal.razorpay_payout_id && (
+                              <p className="text-xs text-zinc-400">
+                                Payout ID: {withdrawal.razorpay_payout_id}
+                              </p>
+                            )}
+                            {withdrawal.utr && (
+                              <p className="text-xs text-emerald-600 font-medium">
+                                UTR: {withdrawal.utr}
+                              </p>
+                            )}
                           </div>
-                          {withdrawal.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full"
-                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "approve" })}
-                                data-testid={`approve-withdrawal-${withdrawal.id}`}
-                              >
-                                <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
-                              </Button>
+                          <div className="flex gap-2">
+                            {withdrawal.status === "pending" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full"
+                                  onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "approve" })}
+                                  data-testid={`approve-withdrawal-${withdrawal.id}`}
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-300 text-red-600 hover:bg-red-50 rounded-full"
+                                  onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "reject" })}
+                                  data-testid={`reject-withdrawal-${withdrawal.id}`}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" /> Reject
+                                </Button>
+                              </>
+                            )}
+                            {withdrawal.status === "processing" && withdrawal.razorpay_payout_id && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-red-300 text-red-600 hover:bg-red-50 rounded-full"
-                                onClick={() => setWithdrawalModal({ open: true, withdrawal, action: "reject" })}
-                                data-testid={`reject-withdrawal-${withdrawal.id}`}
+                                className="border-blue-300 text-blue-600 hover:bg-blue-50 rounded-full"
+                                onClick={() => syncWithdrawalStatus(withdrawal.id)}
+                                disabled={syncingId === withdrawal.id}
+                                data-testid={`sync-withdrawal-${withdrawal.id}`}
                               >
-                                <XCircle className="w-4 h-4 mr-1" /> Reject
+                                <RefreshCw className={`w-4 h-4 mr-1 ${syncingId === withdrawal.id ? 'animate-spin' : ''}`} /> 
+                                Sync Status
                               </Button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -654,7 +698,7 @@ export default function AdminPage() {
           {withdrawalModal.action === "approve" && (
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                This will initiate a payout via Cashfree. The transfer will be processed immediately.
+                This will initiate a payout via RazorpayX. The transfer will be queued and processed based on account balance.
               </p>
             </div>
           )}

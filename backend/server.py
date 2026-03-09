@@ -1068,6 +1068,93 @@ async def smart_collect_webhook(request: Request):
         return {"status": "error", "message": str(e)}
 
 
+# ==================== RAZORPAYX PAYOUT WEBHOOK ====================
+@api_router.post("/webhooks/payout")
+async def payout_webhook(request: Request):
+    """Handle RazorpayX Payout status webhooks"""
+    try:
+        body = await request.body()
+        payload = await request.json()
+        
+        event_type = payload.get("event")
+        logger.info(f"RazorpayX Payout webhook received: {event_type}")
+        
+        # Handle payout events
+        if event_type in ["payout.processed", "payout.reversed", "payout.failed", "payout.rejected", "payout.queued"]:
+            payout_entity = payload.get("payload", {}).get("payout", {}).get("entity", {})
+            
+            payout_id = payout_entity.get("id")
+            payout_status = payout_entity.get("status")
+            reference_id = payout_entity.get("reference_id")  # This is our withdrawal_id
+            failure_reason = payout_entity.get("failure_reason")
+            utr = payout_entity.get("utr")  # Unique Transaction Reference
+            
+            logger.info(f"Payout {payout_id} status: {payout_status}, reference: {reference_id}")
+            
+            if not reference_id:
+                logger.warning(f"Payout webhook: No reference_id in payload")
+                return {"status": "ok", "message": "No reference_id"}
+            
+            # Find withdrawal by razorpay_payout_id or by reference_id (withdrawal_id)
+            withdrawal = await db.withdrawals.find_one({
+                "$or": [
+                    {"razorpay_payout_id": payout_id},
+                    {"id": reference_id}
+                ]
+            }, {"_id": 0})
+            
+            if not withdrawal:
+                logger.warning(f"Payout webhook: Withdrawal not found for payout {payout_id}")
+                return {"status": "ok", "message": "Withdrawal not found"}
+            
+            withdrawal_id = withdrawal["id"]
+            now = datetime.now(timezone.utc).isoformat()
+            
+            # Map RazorpayX status to our withdrawal status
+            update_data = {"updated_at": now}
+            
+            if payout_status == "processed":
+                update_data["status"] = WithdrawalStatus.COMPLETED.value
+                update_data["processed_at"] = now
+                update_data["utr"] = utr
+                update_data["failure_reason"] = None
+                logger.info(f"Withdrawal {withdrawal_id} completed via webhook. UTR: {utr}")
+                
+            elif payout_status in ["failed", "rejected", "reversed"]:
+                update_data["status"] = WithdrawalStatus.FAILED.value
+                update_data["failure_reason"] = failure_reason or f"Payout {payout_status}"
+                
+                # Refund the reserved amount back to collection
+                await db.collections.update_one(
+                    {"id": withdrawal["collection_id"]},
+                    {"$inc": {"withdrawn_amount": -withdrawal["amount"]}}
+                )
+                logger.info(f"Withdrawal {withdrawal_id} failed via webhook: {failure_reason}")
+                
+            elif payout_status == "queued":
+                # Keep as processing - payout is queued due to low balance
+                update_data["status"] = WithdrawalStatus.PROCESSING.value
+                logger.info(f"Withdrawal {withdrawal_id} queued (low balance)")
+            
+            elif payout_status == "processing":
+                update_data["status"] = WithdrawalStatus.PROCESSING.value
+                logger.info(f"Withdrawal {withdrawal_id} is processing")
+            
+            # Update the withdrawal
+            await db.withdrawals.update_one(
+                {"id": withdrawal_id},
+                {"$set": update_data}
+            )
+            
+            return {"status": "ok", "message": f"Payout {payout_status}"}
+        
+        return {"status": "ok", "message": "Event not handled"}
+        
+    except Exception as e:
+        logger.error(f"Payout webhook error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
 # ==================== VIRTUAL ACCOUNT ENDPOINT ====================
 @api_router.get("/collections/{collection_id}/virtual-account")
 async def get_virtual_account(collection_id: str):
@@ -1981,6 +2068,83 @@ async def process_withdrawal(
     except Exception as e:
         logger.error(f"Error processing withdrawal: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/withdrawals/{withdrawal_id}/sync")
+async def sync_withdrawal_status(withdrawal_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Sync withdrawal status from RazorpayX API"""
+    try:
+        withdrawal = await db.withdrawals.find_one({"id": withdrawal_id}, {"_id": 0})
+        if not withdrawal:
+            raise HTTPException(status_code=404, detail="Withdrawal not found")
+        
+        payout_id = withdrawal.get("razorpay_payout_id")
+        if not payout_id:
+            raise HTTPException(status_code=400, detail="No RazorpayX payout ID found for this withdrawal")
+        
+        # Fetch payout status from RazorpayX
+        url = f"{RAZORPAY_API_URL}/payouts/{payout_id}"
+        
+        async with aiohttp.ClientSession() as session:
+            auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Basic {auth_string}"
+            }
+            
+            async with session.get(url, headers=headers) as resp:
+                if resp.status != 200:
+                    error_data = await resp.json()
+                    raise HTTPException(status_code=resp.status, detail=error_data.get("error", {}).get("description", "Failed to fetch payout"))
+                
+                payout_data = await resp.json()
+                payout_status = payout_data.get("status")
+                failure_reason = payout_data.get("failure_reason")
+                utr = payout_data.get("utr")
+                
+                logger.info(f"Synced payout {payout_id} status: {payout_status}")
+                
+                now = datetime.now(timezone.utc).isoformat()
+                update_data = {"updated_at": now}
+                status_changed = False
+                
+                if payout_status == "processed" and withdrawal["status"] != WithdrawalStatus.COMPLETED.value:
+                    update_data["status"] = WithdrawalStatus.COMPLETED.value
+                    update_data["processed_at"] = now
+                    update_data["utr"] = utr
+                    update_data["failure_reason"] = None
+                    status_changed = True
+                    
+                elif payout_status in ["failed", "rejected", "reversed"] and withdrawal["status"] != WithdrawalStatus.FAILED.value:
+                    update_data["status"] = WithdrawalStatus.FAILED.value
+                    update_data["failure_reason"] = failure_reason or f"Payout {payout_status}"
+                    status_changed = True
+                    
+                    # Refund the reserved amount back to collection
+                    await db.collections.update_one(
+                        {"id": withdrawal["collection_id"]},
+                        {"$inc": {"withdrawn_amount": -withdrawal["amount"]}}
+                    )
+                
+                if status_changed or update_data:
+                    await db.withdrawals.update_one(
+                        {"id": withdrawal_id},
+                        {"$set": update_data}
+                    )
+                
+                return {
+                    "status": "success",
+                    "razorpay_status": payout_status,
+                    "withdrawal_status": update_data.get("status", withdrawal["status"]),
+                    "utr": utr,
+                    "message": f"Payout status: {payout_status}"
+                }
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error syncing withdrawal status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.get("/admin/dashboard")
 async def get_admin_dashboard(admin_user: dict = Depends(get_admin_user)):

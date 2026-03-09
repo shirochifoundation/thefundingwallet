@@ -1,97 +1,79 @@
-# FundFlow - Group Collection Platform PRD
+# FundFlow - Crowdfunding Platform PRD
 
 ## Original Problem Statement
-Build a web app where people can collect funds from friends/family for various activities:
-- Kitty Party, School/College Reunions, Team Celebrations
-- Society funds, Festival celebrations (Ganesh Utsav, Navratri)
-- Medical emergencies, Social activities (tree plantation, charity)
+Build a "FundFlow" web application - a crowdfunding/group collection platform for social and corporate activities where users can create public fundraisers, receive donations, and withdraw collected funds.
 
-Features: Public/private collections, Cashfree payment integration with escrow, donors list, gallery.
+## Core Features
 
-## User Choices
-- Payment Gateway: Cashfree (with escrow functionality)
-- UI Design: Modern
-- Cashfree API Keys: TEST environment provided
-- Authentication: JWT-based custom auth
+### Implemented
+1. **User Authentication** - Registration, login, JWT tokens
+2. **Collections (Fundraisers)** - Create, browse, view details
+3. **Donations** - Razorpay Payment Gateway (Card/UPI checkout modal)
+4. **KYC System** - User KYC submission (Bank/UPI, PAN, Aadhaar)
+5. **Admin Panel** - KYC approval, withdrawal management, platform settings
+6. **Withdrawals** - RazorpayX Payouts API integration with admin approval flow
+7. **Static Pages** - About, Contact, Terms, Privacy, Refund policies
 
-## Architecture
+### Payment Flow
+- **Donations:** Razorpay Checkout (TEST mode)
+- **Payouts:** RazorpayX Payouts API (TEST mode)
+- **Webhook:** `/api/webhooks/payout` for automatic status updates
 
-### Backend (FastAPI + MongoDB)
-- `/api/auth/register` - User registration
-- `/api/auth/login` - User login
-- `/api/auth/me` - Get current user (protected)
-- `/api/collections` - CRUD for collections (create protected)
-- `/api/my-collections` - Get user's collections (protected)
-- `/api/payments/create-order` - Cashfree payment order creation
-- `/api/payments/verify/{order_id}` - Payment verification
-- `/api/webhooks/payment` - Cashfree webhook handler
-- `/api/categories` - Collection categories
-- `/api/stats` - Platform statistics
+## Tech Stack
+- **Frontend:** React, TailwindCSS, Shadcn/UI
+- **Backend:** FastAPI, MongoDB (pymongo)
+- **Payments:** Razorpay Payment Gateway, RazorpayX Payouts
 
-### Frontend (React + Tailwind + shadcn/ui)
-- HomePage - Hero, active collections
-- BrowseCollections - Search, filter by category
-- CollectionDetails - Overview, Donate form, Donors list tabs
-- CreateCollection - Multi-step wizard (protected route)
-- PaymentCallback - Payment success/failure handling
-- AboutPage - Stats, use cases, features
-- LoginPage - User login
-- RegisterPage - User registration
+## Key Endpoints
+- `POST /api/payments/create-razorpay-order`
+- `POST /api/payments/verify-razorpay-payment`
+- `POST /api/webhooks/payout` - RazorpayX payout status webhook
+- `POST /api/admin/withdrawals/{id}/sync` - Manual payout status sync
+- `POST /api/admin/withdrawals/{id}/process` - Approve/reject withdrawal
 
-### Database Collections
-- `users` - User accounts with hashed passwords
-- `collections` - Collection documents with user_id
-- `donations` - Donation records with payment status
+## Database Collections
+- `users` - User accounts with KYC status
+- `collections` - Fundraiser campaigns
+- `donations` - Payment records
+- `kyc_details` - KYC submissions
+- `withdrawals` - Payout requests with RazorpayX payout IDs
 
-## User Personas
-1. **Organizer** - Creates collections for events/causes (requires login)
-2. **Donor** - Contributes to collections (no login required)
-3. **Visitor** - Browses public collections
+## Test Credentials
+- **User:** testuser@example.com / password
+- **Admin:** admin@fundflow.com / admin123
 
-## Core Requirements (Static)
-- [x] Public/Private collection visibility
-- [x] Multi-category support
-- [x] Cashfree payment integration
-- [x] Real-time donation tracking
-- [x] Share collection links
-- [x] Anonymous donations option
-- [x] User authentication (login/register)
-- [x] Protected collection creation
+## Changelog
 
-## What's Been Implemented (Jan 31, 2026)
-- [x] Complete backend API with Cashfree HTTP integration
-- [x] Modern responsive UI with Bricolage Grotesque + Inter fonts
-- [x] Collection creation wizard (3-step process)
-- [x] Browse collections with search and category filter
-- [x] Collection details with tabs (Overview, Donate, Donors)
-- [x] Payment order creation and verification
-- [x] Webhook endpoint for payment notifications
-- [x] Platform statistics dashboard
-- [x] About Us page with moved sections
-- [x] User authentication (JWT-based)
-- [x] Protected routes for collection creation
-- [x] User dropdown menu with logout
+### 2026-03-09
+- Added RazorpayX Payout Webhook endpoint (`/api/webhooks/payout`)
+- Added Admin Sync Status feature for manual payout status check
+- Added Payout ID and UTR display in admin panel
+- Fixed modal text from Cashfree to RazorpayX
 
-## Prioritized Backlog
+### 2026-03-07-08
+- Full migration from Cashfree to Razorpay
+- Implemented RazorpayX Payouts for withdrawals
+- Made Browse Collections the new homepage
+- Added static pages (Contact, Terms, Privacy, Refund)
+- Updated About page content
 
-### P0 (Critical)
-- All core features implemented ✓
+## Pending Tasks
 
-### P1 (Important)
-- [ ] Gallery/photos for collections
-- [ ] Email notifications for donations
-- [ ] Payout management to organizers
-- [ ] My Collections dashboard page
+### P0 - High Priority
+- Configure RazorpayX webhook in Razorpay dashboard for automatic status updates
 
-### P2 (Nice to Have)
-- [ ] Social sharing buttons (WhatsApp, Facebook)
-- [ ] Collection updates/announcements
-- [ ] Recurring donations
-- [ ] Export donor list
-- [ ] Dashboard for organizers
+### P1 - Medium Priority
+- Gallery Feature - Allow organizers to add images/videos to collections
+- Update Contact Us page with actual contact details
 
-## Next Tasks
-1. Implement gallery feature for collections
-2. Add email notifications on donation success
-3. Build My Collections dashboard page
-4. Add social sharing buttons
+### P2 - Low Priority
+- Email notifications (Resend integration)
+- Social sharing buttons
+- Backend refactoring (split server.py into modules)
+
+## Webhook Configuration Required
+To enable automatic payout status updates:
+1. Go to Razorpay Dashboard > Webhooks
+2. Add webhook URL: `https://<your-domain>/api/webhooks/payout`
+3. Enable events: `payout.processed`, `payout.failed`, `payout.reversed`
+4. Save the webhook secret to `RAZORPAY_WEBHOOK_SECRET` in backend/.env

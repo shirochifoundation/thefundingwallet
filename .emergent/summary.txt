@@ -1,73 +1,85 @@
-<analysis>**original_problem_statement:** The user wants to build a FundFlow web application, a crowdfunding/group collection platform.
+<analysis>**original_problem_statement:** The user wants to build a FundFlow web application, a crowdfunding/group collection platform for social and corporate activities.
 
 **PRODUCT REQUIREMENTS:**
--   **Core Functionality:** Users can create public or private collections (fundraisers) for various activities (e.g., parties, reunions, social causes, medical emergencies).
--   **Discovery:** Public collections are displayed on a dashboard/home page. Private collections are accessible only via a direct link.
--   **Collection Details:** Each collection has a detail page with an overview, a Donate Now form, a list of donors, and a gallery.
--   **Payments:** The app must integrate a payment gateway that supports escrow/nodal accounts to hold funds. The user has provided test keys for **Cashfree**.
--   **Authentication:** Users must log in to create collections. When a logged-in user donates, their name and email should be pre-filled and non-editable.
+-   **Core Functionality:** Users can create public collections (fundraisers) for various activities.
+-   **Discovery:** Public collections are displayed on a dashboard/home page.
+-   **Collection Details:** Each collection has a detail page with an overview and a Donate Now form.
+-   **Payments:** The app must integrate a payment gateway. The user initially started with Cashfree but has now fully migrated to **Razorpay**.
+-   **Authentication:** Users must log in to create collections.
 -   **User Dashboard:** A My Collections page where users can view and manage the fundraisers they have created.
 -   **Withdrawals:** A system for collection organizers to withdraw their collected funds. This requires:
     -   KYC submission by the user (Bank Account/UPI, PAN, Aadhaar).
     -   An admin approval process for KYC.
-    -   An admin to set a platform fee (e.g., 2.5%).
-    -   Withdrawals are only possible after KYC approval and are triggered by the admin.
-    -   Organizers can withdraw funds at any time.
+    -   An admin to set a platform fee.
+    -   Withdrawals are triggered by admin approval.
+-   **Static Pages:** The application should have standard legal and informational pages like About Us, Contact Us, Terms & Conditions, Privacy Policy, and Refund Policy, all accessible from the footer.
 
 **User's preferred language**: English
 
 **what currently exists?**
 A full-stack crowdfunding platform, FundFlow, has been developed with a React frontend, FastAPI backend, and MongoDB database.
 
--   **Core Features:** Users can register, log in, create collections, browse public collections, and view collection details. Cashfree is integrated for donations.
--   **KYC & Withdrawals:** A complete backend and frontend flow for User KYC and Fund Withdrawals has been implemented. This includes a user profile page for KYC submission, an admin panel for reviewing KYC and withdrawal requests, and integration with the **Cashfree Payouts V2 API** to process payments.
--   **Withdrawal Flow:** The process is now two-step: a user requests a withdrawal (status becomes pending), and an admin must approve it, which then triggers the actual payout via the Cashfree API.
+-   **Core Features:** Users can register, log in, create collections, browse public collections (which is now the homepage), and view collection details.
+-   **Payment & Payouts Migration:** The entire payment and payout system has been migrated from **Cashfree** to **Razorpay**.
+    -   **Donations:** Handled via **Razorpay Payment Gateway** (checkout modal for Card/UPI). The system is currently configured for **TEST mode**.
+    -   **Withdrawals:** Handled via **RazorpayX Payouts API**. The flow requires admin approval and has been successfully tested.
+-   **KYC & Admin:** A complete backend and frontend flow for User KYC and Fund Withdrawals is implemented, including a user profile page and a polished admin panel for managing KYC and withdrawal requests.
+-   **UI/UX:** The UI has been significantly updated based on user feedback, including making the Browse Collections page the new homepage, adding new static pages, and updating content.
 
 **Last working item**:
--   **Last item agent was working:** The agent fixed a bug where a payout failed with the error: Payout failed: Beneficiary error: Cashfree VBA/VPA cannot be added as beneficiary. This happened because a user's KYC details contained a Cashfree Virtual Bank Account (VBA), which is not a valid payout destination.
+-   **Last item agent was working:** The user requested to remove the header (Browse Collections) and the subheading (Discover and support causes that matter to you) from the home page (which is now the  page). The agent implemented this change by modifying .
 -   **Status:** USER VERIFICATION PENDING
 -   **Agent Testing Done:** Y
--   **Which testing method agent to use?** manual testing by curl
+-   **Which testing method agent to use?** screenshot tool
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** (P0) Cashfree Payouts are consistently failing due to account configuration.
-
-    -   **Attempted fixes:** The agent has completed a full migration from a mock implementation to the Cashfree Payouts V2 API, resolving numerous integration challenges along the way, including IP whitelisting, API version mismatches (V1 vs. V2), and beneficiary creation logic. The integration is now correctly implemented using only V2 endpoints.
-    -   **Next debug checklist:** This issue is **external** and not related to the application's code. The user's Cashfree sandbox account is not configured correctly. Transfers are being rejected with errors like  and . The next agent must guide the user to contact Cashfree support and ask them to enable the **Bank Transfer** and **UPI** transfer modes for their payout fund source ().
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. Fixing it will make the entire fund withdrawal feature functional.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** Y
+-   **Issue 1:** (P0) Razorpay Smart Collect webhook is not configured.
+    -   **Description:** The backend code for Razorpay Smart Collect (Virtual Accounts) exists, but the user requested to hide the UI for it. If this feature is re-enabled, payments made via bank transfer will not be automatically credited until a webhook is set up in the Razorpay dashboard.
+    -   **Next debug checklist:** The agent must provide the user with instructions to configure the webhook in their Razorpay dashboard. The URL is , and the active event should be . The user must provide the .
+    -   **Why fix this issue and what will be achieved with the fix?** This will enable automated reconciliation of payments if the Smart Collect (Bank/UPI transfer) donation method is re-introduced.
+    -   **Status:** BLOCKED (waiting on user action)
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** backend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
-None. The KYC & Withdrawal feature implementation is complete but blocked by the external issue above.
+None.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P0) **Verify Cashfree Payout Integration:** Once the user confirms that the Cashfree account configuration is fixed, perform a full end-to-end test of the withdrawal flow.
-    -   (P1) **Admin Panel UI/UX Polish:** Review and enhance the admin panel for better usability.
+    -   (P1) **Implement Gallery Feature:** Implement the gallery tab on the collection details page, allowing organizers to add images/videos.
+    -   (P2) **Update Contact Info:** The Contact Us page was created with placeholder data. The user may need to provide actual contact details (email, phone, address).
 -   **Future Tasks:**
-    -   (P1) **Gallery Feature:** Implement the gallery tab on the collection details page.
-    -   (P2) **Email Notifications:** Integrate an email service (e.g., SendGrid, Resend) for donation and withdrawal notifications.
+    -   (P2) **Email Notifications:** Integrate an email service (e.g., Resend) for donation receipts, withdrawal status updates, and other notifications.
     -   (P2) **Social Sharing:** Add social sharing buttons to collection pages.
 
 **Completed work in this session**
--   **KYC & Withdrawal Feature (End-to-End Implementation):**
-    -   **Frontend:** Created pages for user profile/KYC (), an admin panel for approvals (), and a withdrawal modal ().
-    -   **Backend:** Implemented and refined all API endpoints for KYC submission, withdrawal requests, and admin processing.
--   **Cashfree Payouts V2 Integration:**
-    -   Migrated from a mocked implementation to a full integration with the Cashfree Payouts V2 API, ensuring all V1 API calls were removed.
-    -   Implemented robust beneficiary management logic, including handling conflicts when a beneficiary already exists.
--   **Workflow Change:**
-    -   Modified the withdrawal flow to require admin approval. Payouts are now triggered from the admin panel, not directly by the user's request.
--   **Bug Fixes & Validation:**
-    -   Resolved multiple V1/V2 API conflicts and authentication issues (, ).
-    -   Added backend validation to prevent users from submitting Cashfree Virtual Bank Accounts (VBAs) as part of their KYC, which was causing payout failures ().
+-   **Full Payment System Migration (Cashfree → Razorpay):**
+    -   Replaced Cashfree Payment Gateway with **Razorpay Payment Gateway** for donations.
+    -   Replaced Cashfree Payouts with **RazorpayX Payouts API** for fund withdrawals.
+    -   Successfully debugged and tested the entire RazorpayX payout flow (contact creation, fund account creation, payout initiation).
+    -   Switched between Razorpay Test and Live modes as requested. The app is currently in **Test Mode**.
+-   **Razorpay Smart Collect Implementation & UI Tweak:**
+    -   Implemented backend logic for Razorpay Smart Collect (creating virtual accounts for collections).
+    -   Initially added a UI for donors to choose between Bank Transfer (Smart Collect) and Card/UPI (Checkout).
+    -   Removed the Bank Transfer UI from the donation page per user request, defaulting to the Card/UPI checkout form.
+-   **Major UI/UX Changes:**
+    -   Made the **Browse Collections page the new Home Page** and deleted the old .
+    -   Simplified the main navigation and footer to reflect the new homepage structure.
+    -   Removed the hero section and title from the new homepage for a cleaner look.
+    -   Added a Ready to Start Collecting? CTA section to the bottom of the Browse Collections page.
+    -   Polished the **Admin Dashboard UI** with new stat cards (including Pending Withdrawals) and improved styling.
+-   **Feature Enhancements & Fixes:**
+    -   Made the Goal Amount for collections optional on both the frontend and backend.
+    -   Set the minimum donation amount to ₹1.
+    -   Created and linked four new static pages: **Contact Us, Terms & Conditions, Privacy Policy, and Refund & Cancellation Policy**.
+    -   Updated the About Us page content to align with the user's business description.
+    -   Fixed a bug where a redundant Donate Now button appeared on mobile devices.
+    -   Fixed the Admin Page layout to remove the main public site header.
 
 **Earlier issues found/mentioned but not fixed**
-None.
+-   The critical blocker from the previous session (**Cashfree account configuration**) is no longer relevant as the entire system has been migrated to Razorpay.
 
 **Known issue recurrence from previous fork**
 None.
@@ -78,7 +90,8 @@ None.
 **Key Technical Concepts**
 -   **Backend:** FastAPI, MongoDB (via ), Pydantic, JWT.
 -   **Frontend:** React, React Router,  for global state, TailwindCSS.
--   **Payments:** Cashfree Payment Gateway (Donations), **Cashfree Payouts V2 API** (Withdrawals) via direct HTTP calls.
+-   **Payments (Donations):** **Razorpay Payment Gateway** (Checkout via SDK).
+-   **Payouts (Withdrawals):** **RazorpayX Payouts API** (direct HTTP calls).
 
 **key DB schema**
 -   **users**: 
@@ -88,63 +101,67 @@ None.
 -   **withdrawals**: 
 
 **changes in tech stack**
-None.
+-   **Complete Migration from Cashfree to Razorpay:**
+    -   Donations: Cashfree Payment Gateway → **Razorpay Payment Gateway**.
+    -   Payouts: Cashfree Payouts API → **RazorpayX Payouts API**.
 
 **All files of reference**
 -   **Created Files:**
-    -   : For user KYC submission and status viewing.
-    -   : For admin review of KYC and withdrawal requests.
-    -   : UI for initiating a withdrawal request.
+    -   
+    -   
+    -   
+    -   
+-   **Deleted Files:**
+    -   
 -   **Heavily Modified Files:**
-    -   : Contains all new backend logic for KYC, admin actions, and the complete Cashfree Payouts V2 integration.
-    -   : Updated with Cashfree Payouts keys and Fund Source ID.
-    -   : Added new routes for Profile and Admin pages.
-    -   : Includes  in the user state.
-    -   : Integrated the withdrawal functionality.
+    -   : Complete overhaul of payment and payout logic to integrate Razorpay Checkout, Smart Collect (backend only), and RazorpayX Payouts. It has grown even larger.
+    -   : Removed Cashfree keys and added Razorpay keys and RazorpayX account number.
+    -   : Major refactoring to handle Razorpay Checkout flow, then Smart Collect, and then reverting to Checkout only.
+    -   : Rerouted the home ('/') path to  and added routes for new static pages.
+    -   : Updated header and footer navigation links.
+    -   : UI polished with new stat cards and updated text for payout processing.
+    -   : Became the new home page, had a CTA section added, and then its header removed.
 
 **Areas that need refactoring**:
--   The  file has grown significantly and contains all routes, models, and business logic. It should be broken down into a more modular structure (e.g., separate files for routes, services, and models).
+-    is critically monolithic. It urgently needs to be broken down into separate modules for routes, database models, payment services (Razorpay), payout services (RazorpayX), and KYC logic to improve maintainability.
 
 **key api endpoints**
--   , , 
--    (GET, POST),  (GET)
--    (GET)
 -    (POST)
--    (POST),  (GET)
 -    (POST)
--    (GET),  (POST)
--    (GET),  (POST)
+-    (POST) - *Logic exists but UI is hidden and webhook not configured*
+-    (GET) - *Logic exists but UI is hidden*
 -    (GET)
+-    (POST) - *Now uses RazorpayX Payouts*
 
 **Critical Info for New Agent**
--   **CRITICAL BLOCKER:** The fund withdrawal feature is **blocked by an external Cashfree account configuration issue**. The code is complete and correctly uses the V2 API, but all transfers are rejected. You must inform the user that they need to **contact Cashfree support** to enable **Bank Transfer** and **UPI** modes on their fund source (). Do not attempt to debug this further in the code.
--   **Withdrawal Flow:** The current flow is: 1. User requests withdrawal -> status becomes pending. 2. Admin logs in, reviews the request, and clicks Approve -> triggers the Cashfree Payout API call.
--   **API Version:** The integration uses **Cashfree Payouts V2 API exclusively**. All V1 code has been removed.
--   **Validation:** The backend now prevents users from submitting Cashfree's own Virtual Bank Accounts (VBAs) in their KYC details, as these cannot be used for payouts.
+-   **Razorpay is the SOLE payment provider.** All Cashfree code has been removed. Do not attempt to debug any Cashfree-related issues from the original handoff; they are obsolete.
+-   **The app is in Razorpay TEST Mode.** Use Razorpay's test credentials for any payment/payout testing. The user has provided live keys and may ask to switch back.
+-   **Two Donation Methods Implemented (One Hidden):** The backend supports both Razorpay Checkout (Card/UPI modal) and Razorpay Smart Collect (Virtual Accounts). However, per the user's request, the frontend UI for Smart Collect has been removed, and only the Checkout form is shown. Be aware that the backend logic for Smart Collect is still present in .
+-   **RazorpayX Payouts are working.** The flow is . The integration has been tested and works, with payouts being  due to low balance in the test account, which is expected behavior.
 
 **documents and test reports created in this job**
 -   /app/memory/PRD.md
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks why a withdrawal was rejected with a Cashfree VBA/VPA error.
-2.  **Agent:** Investigated, found the user's KYC data contained a test VBA, and implemented a fix to validate against this. (COMPLETED)
-3.  **User:** Insisted that the agent must use only V2 APIs for payouts, suspecting V1 APIs were causing issues.
-4.  **Agent:** Refactored the code to remove all V1 remnants and confirmed the integration is pure V2. (COMPLETED)
-5.  **User:** Reported an error on the admin panel: Beneficiary id not present.
-6.  **Agent:** Debugged and fixed the V2 beneficiary creation logic to handle conflicts where a beneficiary already exists. (COMPLETED)
-7.  **User:** Confirmed they want payouts to happen only after admin approval.
-8.  **Agent:** Reworked the withdrawal flow to be a two-step process requiring admin approval. (COMPLETED)
-9.  **User:** Asked when the payout request is sent to Cashfree.
-10. **Agent:** Clarified the flow and asked for the user's preference. (ADDRESSED)
+1.  **User:** Remove Collect Funds Together, Easily section from the Home page. (COMPLETED)
+2.  **User:** Add Ready to Start Collecting? section to the Browse Collections page. (COMPLETED)
+3.  **User:** Make Browse Collections page the new Home page. (COMPLETED)
+4.  **User:** Remove the Browse Collections label/header from the new home page. (COMPLETED)
+5.  **User:** Wants help setting up webhooks and migrating to Razorpay Payouts. (COMPLETED)
+6.  **User:** Confirms they want the platform-controlled payout flow (Option 1). (ADDRESSED)
+7.  **User:** Provides their RazorpayX Account Number for payouts. (COMPLETED)
+8.  **User:** Asks to switch to Razorpay Live mode and provides keys. (COMPLETED)
+9.  **User:** Remove Bank/UPI transfer option from the donation page. (COMPLETED)
+10. **User:** Set minimum donation amount to ₹1. (COMPLETED)
 
 **Project Health Check:**
--   **Working:** Core platform (auth, collections, donations), KYC submission, and the UI/backend logic for withdrawal requests and admin approvals.
--   **Broken:** The final step of the withdrawal process—the actual fund transfer via Cashfree—is non-functional due to the external account configuration issue.
+-   **Working:** Core platform (auth, collections), KYC, Admin Panel, Razorpay Checkout donations, and RazorpayX payouts. All recent UI change requests have been implemented.
+-   **Broken:** None.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Cashfree Payment Gateway** (for collecting donations) — Requires User API Key.
--   **Cashfree Payouts API V2** (for processing withdrawals) — Requires User API Key.
+-   **Razorpay Payment Gateway** — Requires User API Key (currently in TEST mode).
+-   **RazorpayX Payouts API** — Requires User API Key and Account Number (currently in TEST mode).
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
@@ -155,7 +172,6 @@ None.
 **Credentials to test flow:**
 -   **User:**  / 
 -   **Admin:**  / 
--   **Users with valid KYC for testing:**  (bank account),  (UPI).
 
 **What agent forgot to execute**
-The agent correctly identified the root cause of the payout failure (Cashfree account configuration) multiple times but was repeatedly drawn back into debugging the code at the user's insistence. While this addressed the user's immediate concerns, it delayed reinforcing the critical external blocker. The next agent should be firm in stating that the code is correct and the issue lies with the Cashfree account setup.</analysis>
+The agent correctly implemented all user requests. The only potential point of confusion is the Smart Collect code that exists on the backend but is not used by the frontend. The agent should have considered adding a comment or note in the code to clarify why the corresponding UI was removed to prevent future confusion.</analysis>
