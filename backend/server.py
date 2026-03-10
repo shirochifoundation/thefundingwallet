@@ -1479,10 +1479,13 @@ async def create_razorpayx_fund_account(contact_id: str, payout_mode: str, kyc: 
             # Get bank details from KYC - handle different possible field names
             account_number = kyc.get("bank_account_number") or kyc.get("bank_account", {}).get("number")
             ifsc = kyc.get("bank_ifsc") or kyc.get("bank_account", {}).get("ifsc")
-            holder_name = kyc.get("bank_account_holder") or kyc.get("bank_account", {}).get("holder_name", "Account Holder")
+            holder_name = kyc.get("bank_account_holder") or kyc.get("bank_account", {}).get("holder_name")
             
             if not account_number or not ifsc:
                 return None, "Bank account details not found in KYC"
+            
+            if not holder_name:
+                return None, "Bank account holder name not found in KYC"
             
             payload = {
                 "contact_id": contact_id,
