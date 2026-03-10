@@ -545,26 +545,23 @@ export default function CollectionDetails() {
 
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-2">
-                    Phone Number {isAuthenticated && user?.phone ? '' : '*'}
+                    Phone Number *
                   </label>
                   <Input
                     type="tel"
                     placeholder="Enter 10-digit phone number"
                     value={donorPhone}
-                    onChange={(e) => !isAuthenticated && setDonorPhone(e.target.value)}
+                    onChange={(e) => setDonorPhone(e.target.value)}
                     className={`h-12 rounded-xl border-transparent ${
                       isAuthenticated && user?.phone
                         ? 'bg-zinc-100 text-zinc-600 cursor-not-allowed' 
                         : 'bg-[#f5f5f7] focus:border-[#002FA7] focus:bg-white'
                     }`}
                     pattern="[0-9]{10}"
-                    required={!isAuthenticated || !user?.phone}
+                    required
                     readOnly={isAuthenticated && !!user?.phone}
                     data-testid="donor-phone-input"
                   />
-                  {isAuthenticated && !user?.phone && (
-                    <p className="text-xs text-zinc-500 mt-1">Phone number required for payment</p>
-                  )}
                 </div>
 
                 <div>
