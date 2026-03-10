@@ -594,43 +594,12 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             "virtual_account": None  # Will be populated by Smart Collect
         }
         
-        # Create Razorpay Smart Collect Virtual Account
-        virtual_account = await create_virtual_account(collection_id, collection.title, collection.organizer_email)
-        if virtual_account:
-            # Extract bank account and VPA details
-            receivers = virtual_account.get("receivers", [])
-            bank_account = None
-            vpa = None
-            
-            for receiver in receivers:
-                if receiver.get("entity") == "bank_account":
-                    # Bank account data is at the receiver level, not nested
-                    bank_account = {
-                        "account_number": receiver.get("account_number"),
-                        "ifsc": receiver.get("ifsc"),
-                        "bank_name": receiver.get("bank_name"),
-                        "name": receiver.get("name")
-                    }
-                elif receiver.get("entity") == "vpa":
-                    # VPA data is at the receiver level
-                    vpa = {
-                        "address": receiver.get("address"),
-                        "handle": receiver.get("handle")
-                    }
-            
-            doc["virtual_account"] = {
-                "id": virtual_account.get("id"),
-                "status": virtual_account.get("status"),
-                "bank_account": bank_account,
-                "vpa": vpa,
-                "created_at": now
-            }
-            logger.info(f"Virtual account attached to collection {collection_id}")
-        else:
-            logger.warning(f"Could not create virtual account for collection {collection_id}")
-        
         await db.collections.insert_one(doc)
         logger.info(f"Collection created: {collection_id}")
+        
+        # Note: Smart Collect Virtual Account creation is disabled
+        # Virtual accounts will be created on-demand if/when Smart Collect is re-enabled
+        # via the /collections/{id}/virtual-account endpoint
         
         # Add available_amount for response
         doc["available_amount"] = 0.0
