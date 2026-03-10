@@ -1415,7 +1415,7 @@ async def get_kyc_status(current_user: dict = Depends(get_required_user)):
 
 # ==================== WITHDRAWAL ENDPOINTS (RazorpayX Payouts) ====================
 
-async def create_razorpayx_contact(name: str, email: str, phone: str, contact_type: str = "vendor") -> tuple:
+async def create_razorpayx_contact(name: str, email: str, phone: str = None, contact_type: str = "vendor") -> tuple:
     """Create a RazorpayX contact for payouts"""
     try:
         url = f"{RAZORPAY_API_URL}/contacts"
@@ -1423,10 +1423,13 @@ async def create_razorpayx_contact(name: str, email: str, phone: str, contact_ty
         payload = {
             "name": name,
             "email": email,
-            "contact": phone,
             "type": contact_type,
             "reference_id": f"contact_{uuid.uuid4().hex[:12]}"
         }
+        
+        # Only add phone/contact if provided (it's optional for RazorpayX)
+        if phone:
+            payload["contact"] = phone
         
         async with aiohttp.ClientSession() as session:
             auth_string = base64.b64encode(f"{RAZORPAY_KEY_ID}:{RAZORPAY_KEY_SECRET}".encode()).decode()
@@ -1529,12 +1532,20 @@ async def process_razorpayx_payout(withdrawal_id: str, net_amount: float, payout
         if not user_doc:
             return None, "User not found"
         
+        # Get user email (required field, should always exist)
+        user_email = user_doc.get("email")
+        if not user_email:
+            return None, "User email not found"
+        
+        # Get phone - try user profile first, then KYC (phone is optional)
+        user_phone = user_doc.get("phone") or kyc.get("phone")
+        
         # Step 1: Create Contact
         contact_name = beneficiary_name or kyc.get("bank_account_holder", user_doc.get("name", "User"))
         contact_id, contact_error = await create_razorpayx_contact(
             name=contact_name,
-            email=user_doc.get("email", "user@example.com"),
-            phone=user_doc.get("phone", "9999999999")
+            email=user_email,
+            phone=user_phone  # Can be None - RazorpayX contact creation handles optional phone
         )
         
         if contact_error:
