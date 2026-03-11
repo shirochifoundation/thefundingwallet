@@ -147,8 +147,8 @@ export default function CreateCollection() {
         headers: getAuthHeader()
       });
 
-      toast.success("Collection created successfully!");
-      navigate(`/collection/${response.data.id}`);
+      toast.success("Collection created! It will be visible after admin approval.");
+      navigate(`/my-collections`);
     } catch (error) {
       console.error("Error creating collection:", error);
       if (error.response?.status === 401) {

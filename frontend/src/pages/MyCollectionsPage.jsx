@@ -22,7 +22,9 @@ import {
   Lock,
   ArrowDownToLine,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -103,6 +105,31 @@ export default function MyCollectionsPage() {
     const link = `${window.location.origin}/collection/${collectionId}`;
     navigator.clipboard.writeText(link);
     toast.success("Link copied to clipboard!");
+  };
+
+  const getCollectionStatusBadge = (status) => {
+    switch (status) {
+      case 'pending_approval':
+        return (
+          <Badge className="bg-amber-100 text-amber-700 rounded-full px-2 py-1 text-xs">
+            <Clock className="w-3 h-3 mr-1" /> Pending Approval
+          </Badge>
+        );
+      case 'active':
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 rounded-full px-2 py-1 text-xs">
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Active
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-100 text-red-700 rounded-full px-2 py-1 text-xs">
+            <XCircle className="w-3 h-3 mr-1" /> Rejected
+          </Badge>
+        );
+      default:
+        return null;
+    }
   };
 
   const handleWithdrawClick = (e, collection) => {
@@ -290,6 +317,7 @@ export default function MyCollectionsPage() {
                               <Badge className={`${badgeClass} rounded-full px-3 py-1 text-xs font-semibold`}>
                                 {collection.category}
                               </Badge>
+                              {getCollectionStatusBadge(collection.status)}
                               {collection.visibility === 'private' ? (
                                 <Badge className="bg-zinc-100 text-zinc-600 rounded-full px-2 py-1 text-xs">
                                   <Lock className="w-3 h-3 mr-1" /> Private
@@ -306,6 +334,18 @@ export default function MyCollectionsPage() {
                             >
                               {collection.title}
                             </h3>
+                            {collection.status === 'rejected' && collection.rejection_reason && (
+                              <p className="text-sm text-red-600 mt-1">
+                                <AlertCircle className="w-3 h-3 inline mr-1" />
+                                {collection.rejection_reason}
+                              </p>
+                            )}
+                            {collection.status === 'pending_approval' && (
+                              <p className="text-sm text-amber-600 mt-1">
+                                <Clock className="w-3 h-3 inline mr-1" />
+                                Waiting for admin approval before going live
+                              </p>
+                            )}
                             <p className="text-sm text-zinc-500 mt-1">
                               Created {formatDate(collection.created_at)}
                             </p>

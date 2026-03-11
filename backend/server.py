@@ -75,7 +75,9 @@ class CollectionVisibility(str, Enum):
     PRIVATE = "private"
 
 class CollectionStatus(str, Enum):
+    PENDING_APPROVAL = "pending_approval"
     ACTIVE = "active"
+    REJECTED = "rejected"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
@@ -580,7 +582,7 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             "current_amount": 0.0,
             "withdrawn_amount": 0.0,
             "visibility": collection.visibility.value,
-            "status": CollectionStatus.ACTIVE.value,
+            "status": CollectionStatus.PENDING_APPROVAL.value,
             "deadline": collection.deadline,
             "cover_image": collection.cover_image or get_category_image(collection.category),
             "organizer_name": collection.organizer_name,
@@ -591,7 +593,10 @@ async def create_collection(collection: CollectionCreate, current_user: dict = D
             "updated_at": now,
             "share_link": generate_share_link(collection_id),
             "gallery": [],
-            "virtual_account": None  # Will be populated by Smart Collect
+            "virtual_account": None,
+            "rejection_reason": None,
+            "reviewed_by": None,
+            "reviewed_at": None
         }
         
         await db.collections.insert_one(doc)
@@ -2129,12 +2134,120 @@ async def sync_withdrawal_status(withdrawal_id: str, admin_user: dict = Depends(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== ADMIN COLLECTION MANAGEMENT ====================
+
+class CollectionReview(BaseModel):
+    status: str  # "approved" or "rejected"
+    rejection_reason: Optional[str] = None
+
+@api_router.get("/admin/collections")
+async def get_admin_collections(
+    status: Optional[str] = Query(None),
+    admin_user: dict = Depends(get_admin_user)
+):
+    """Get all collections for admin review"""
+    try:
+        query = {}
+        if status:
+            query["status"] = status
+        
+        cursor = db.collections.find(query, {"_id": 0}).sort("created_at", -1)
+        collections = await cursor.to_list(length=100)
+        
+        # Enrich with user info
+        for c in collections:
+            user = await db.users.find_one({"id": c.get("user_id")}, {"_id": 0, "name": 1, "email": 1})
+            c["user_name"] = user.get("name") if user else "Unknown"
+            c["user_email"] = user.get("email") if user else "Unknown"
+            c["withdrawn_amount"] = c.get("withdrawn_amount", 0.0)
+            c["available_amount"] = c.get("current_amount", 0.0) - c["withdrawn_amount"]
+        
+        return collections
+    except Exception as e:
+        logger.error(f"Error fetching admin collections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/admin/collections/pending")
+async def get_pending_collections(admin_user: dict = Depends(get_admin_user)):
+    """Get collections pending approval"""
+    try:
+        cursor = db.collections.find(
+            {"status": CollectionStatus.PENDING_APPROVAL.value}, 
+            {"_id": 0}
+        ).sort("created_at", -1)
+        collections = await cursor.to_list(length=100)
+        
+        # Enrich with user info
+        for c in collections:
+            user = await db.users.find_one({"id": c.get("user_id")}, {"_id": 0, "name": 1, "email": 1})
+            c["user_name"] = user.get("name") if user else "Unknown"
+            c["user_email"] = user.get("email") if user else "Unknown"
+        
+        return collections
+    except Exception as e:
+        logger.error(f"Error fetching pending collections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/collections/{collection_id}/review")
+async def review_collection(
+    collection_id: str,
+    review: CollectionReview,
+    admin_user: dict = Depends(get_admin_user)
+):
+    """Approve or reject a collection"""
+    try:
+        collection = await db.collections.find_one({"id": collection_id}, {"_id": 0})
+        if not collection:
+            raise HTTPException(status_code=404, detail="Collection not found")
+        
+        if collection["status"] not in [CollectionStatus.PENDING_APPROVAL.value, CollectionStatus.REJECTED.value]:
+            raise HTTPException(status_code=400, detail="Collection is not pending approval")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        if review.status == "approved":
+            update_data = {
+                "status": CollectionStatus.ACTIVE.value,
+                "rejection_reason": None,
+                "reviewed_by": admin_user["id"],
+                "reviewed_at": now,
+                "updated_at": now
+            }
+            logger.info(f"Collection {collection_id} approved by admin {admin_user['id']}")
+        elif review.status == "rejected":
+            if not review.rejection_reason:
+                raise HTTPException(status_code=400, detail="Rejection reason is required")
+            update_data = {
+                "status": CollectionStatus.REJECTED.value,
+                "rejection_reason": review.rejection_reason,
+                "reviewed_by": admin_user["id"],
+                "reviewed_at": now,
+                "updated_at": now
+            }
+            logger.info(f"Collection {collection_id} rejected by admin {admin_user['id']}: {review.rejection_reason}")
+        else:
+            raise HTTPException(status_code=400, detail="Invalid status. Use 'approved' or 'rejected'")
+        
+        await db.collections.update_one({"id": collection_id}, {"$set": update_data})
+        
+        return {"status": "success", "message": f"Collection {review.status} successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reviewing collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/admin/dashboard")
 async def get_admin_dashboard(admin_user: dict = Depends(get_admin_user)):
     """Get admin dashboard stats"""
     try:
         # Total users
         total_users = await db.users.count_documents({"is_admin": {"$ne": True}})
+        
+        # Collection stats
+        pending_collections = await db.collections.count_documents({"status": CollectionStatus.PENDING_APPROVAL.value})
+        active_collections = await db.collections.count_documents({"status": CollectionStatus.ACTIVE.value})
         
         # KYC stats
         pending_kyc = await db.kyc.count_documents({"status": KYCStatus.PENDING.value})
@@ -2158,6 +2271,8 @@ async def get_admin_dashboard(admin_user: dict = Depends(get_admin_user)):
         
         return {
             "total_users": total_users,
+            "pending_collections": pending_collections,
+            "active_collections": active_collections,
             "pending_kyc": pending_kyc,
             "approved_kyc": approved_kyc,
             "pending_withdrawals": pending_withdrawals,

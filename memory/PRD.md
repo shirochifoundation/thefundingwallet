@@ -8,11 +8,19 @@ Build a "FundFlow" web application - a crowdfunding/group collection platform fo
 ### Implemented
 1. **User Authentication** - Registration, login, JWT tokens
 2. **Collections (Fundraisers)** - Create, browse, view details
-3. **Donations** - Razorpay Payment Gateway (Card/UPI checkout modal)
-4. **KYC System** - User KYC submission (Bank/UPI, PAN, Aadhaar)
-5. **Admin Panel** - KYC approval, withdrawal management, platform settings
-6. **Withdrawals** - RazorpayX Payouts API integration with admin approval flow
-7. **Static Pages** - About, Contact, Terms, Privacy, Refund policies
+3. **Collection Approval System** - Admin must approve collections before they go live
+4. **Donations** - Razorpay Payment Gateway (Card/UPI checkout modal)
+5. **KYC System** - User KYC submission (Bank/UPI, PAN, Aadhaar)
+6. **Admin Panel** - Collection management, KYC approval, withdrawal management, platform settings
+7. **Withdrawals** - RazorpayX Payouts API integration with admin approval flow
+8. **Static Pages** - About, Contact, Terms, Privacy, Refund policies
+
+### Collection Approval Flow
+1. User creates a collection → Status: `pending_approval`
+2. Collection NOT visible on public dashboard
+3. Admin reviews collection in Admin Panel → Collections tab
+4. Admin approves → Status: `active` → Visible on public dashboard
+5. Admin rejects with reason → Status: `rejected` → User sees rejection reason
 
 ### Payment Flow
 - **Donations:** Razorpay Checkout (TEST mode)
@@ -25,15 +33,24 @@ Build a "FundFlow" web application - a crowdfunding/group collection platform fo
 - **Payments:** Razorpay Payment Gateway, RazorpayX Payouts
 
 ## Key Endpoints
-- `POST /api/payments/create-razorpay-order`
-- `POST /api/payments/verify-razorpay-payment`
+
+### Collection Management (Admin)
+- `GET /api/admin/collections` - Get all collections
+- `GET /api/admin/collections/pending` - Get pending collections only
+- `POST /api/admin/collections/{id}/review` - Approve/reject collection
+
+### Withdrawals
 - `POST /api/webhooks/payout` - RazorpayX payout status webhook
 - `POST /api/admin/withdrawals/{id}/sync` - Manual payout status sync
 - `POST /api/admin/withdrawals/{id}/process` - Approve/reject withdrawal
 
+### Payments
+- `POST /api/payments/create-razorpay-order`
+- `POST /api/payments/verify-razorpay-payment`
+
 ## Database Collections
 - `users` - User accounts with KYC status
-- `collections` - Fundraiser campaigns
+- `collections` - Fundraiser campaigns (status: pending_approval, active, rejected, completed, cancelled)
 - `donations` - Payment records
 - `kyc_details` - KYC submissions
 - `withdrawals` - Payout requests with RazorpayX payout IDs
@@ -44,30 +61,38 @@ Build a "FundFlow" web application - a crowdfunding/group collection platform fo
 
 ## Changelog
 
+### 2026-03-11
+- Implemented Collection Management in Admin Panel
+- New collections require admin approval before going live
+- Added "Collections" tab as default in Admin Panel
+- Added "Pending Collections" stat card
+- Users can see collection status in "My Collections" page
+- Updated success message after creating collection
+
+### 2026-03-10
+- Fixed phone number input in donation form
+- Removed hardcoded customer identifier defaults
+- Disabled automatic Razorpay Smart Collect on collection creation
+
 ### 2026-03-09
 - Added RazorpayX Payout Webhook endpoint (`/api/webhooks/payout`)
 - Added Admin Sync Status feature for manual payout status check
 - Added Payout ID and UTR display in admin panel
-- Fixed modal text from Cashfree to RazorpayX
 
 ### 2026-03-07-08
 - Full migration from Cashfree to Razorpay
 - Implemented RazorpayX Payouts for withdrawals
 - Made Browse Collections the new homepage
 - Added static pages (Contact, Terms, Privacy, Refund)
-- Updated About page content
 
 ## Pending Tasks
-
-### P0 - High Priority
-- Configure RazorpayX webhook in Razorpay dashboard for automatic status updates
 
 ### P1 - Medium Priority
 - Gallery Feature - Allow organizers to add images/videos to collections
 - Update Contact Us page with actual contact details
+- Email notifications (Resend integration)
 
 ### P2 - Low Priority
-- Email notifications (Resend integration)
 - Social sharing buttons
 - Backend refactoring (split server.py into modules)
 

@@ -32,7 +32,9 @@ import {
   Building2,
   Smartphone,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  FolderOpen,
+  FileText
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -47,13 +49,16 @@ export default function AdminPage() {
   const [dashboard, setDashboard] = useState(null);
   const [kycRequests, setKycRequests] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [settings, setSettings] = useState({ platform_fee_percentage: 2.5 });
   
   // Modal states
   const [reviewModal, setReviewModal] = useState({ open: false, kyc: null, action: "" });
   const [withdrawalModal, setWithdrawalModal] = useState({ open: false, withdrawal: null, action: "" });
+  const [collectionModal, setCollectionModal] = useState({ open: false, collection: null, action: "" });
   const [rejectionReason, setRejectionReason] = useState("");
   const [failureReason, setFailureReason] = useState("");
+  const [collectionRejectionReason, setCollectionRejectionReason] = useState("");
   const [syncingId, setSyncingId] = useState(null);
 
   useEffect(() => {
@@ -105,14 +110,16 @@ export default function AdminPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [kycRes, withdrawRes, settingsRes] = await Promise.all([
+      const [kycRes, withdrawRes, settingsRes, collectionsRes] = await Promise.all([
         axios.get(`${API}/admin/kyc-requests`, { headers: getAuthHeader() }),
         axios.get(`${API}/admin/withdrawals`, { headers: getAuthHeader() }),
-        axios.get(`${API}/admin/settings`, { headers: getAuthHeader() })
+        axios.get(`${API}/admin/settings`, { headers: getAuthHeader() }),
+        axios.get(`${API}/admin/collections`, { headers: getAuthHeader() })
       ]);
       setKycRequests(kycRes.data);
       setWithdrawals(withdrawRes.data);
       setSettings(settingsRes.data);
+      setCollections(collectionsRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -204,10 +211,41 @@ export default function AdminPage() {
     }
   };
 
+  const handleCollectionReview = async () => {
+    if (!collectionModal.collection) return;
+
+    if (collectionModal.action === "rejected" && !collectionRejectionReason.trim()) {
+      toast.error("Please provide a rejection reason");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(
+        `${API}/admin/collections/${collectionModal.collection.id}/review`,
+        {
+          status: collectionModal.action,
+          rejection_reason: collectionModal.action === "rejected" ? collectionRejectionReason : null
+        },
+        { headers: getAuthHeader() }
+      );
+      toast.success(`Collection ${collectionModal.action} successfully`);
+      setCollectionModal({ open: false, collection: null, action: "" });
+      setCollectionRejectionReason("");
+      fetchAllData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to review collection");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const config = {
       pending: { color: "bg-amber-100 text-amber-700", icon: Clock },
+      pending_approval: { color: "bg-amber-100 text-amber-700", icon: Clock },
       approved: { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
+      active: { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
       rejected: { color: "bg-red-100 text-red-700", icon: XCircle },
       processing: { color: "bg-blue-100 text-blue-700", icon: Loader2 },
       completed: { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
@@ -216,7 +254,7 @@ export default function AdminPage() {
     const { color, icon: Icon } = config[status] || config.pending;
     return (
       <Badge className={`${color} rounded-full px-3 py-1 capitalize`}>
-        <Icon className="w-3 h-3 mr-1" /> {status}
+        <Icon className="w-3 h-3 mr-1" /> {status.replace('_', ' ')}
       </Badge>
     );
   };
@@ -304,7 +342,7 @@ export default function AdminPage() {
 
         {/* Stats Cards */}
         {dashboard && (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
             <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
@@ -315,6 +353,21 @@ export default function AdminPage() {
                     <p className="text-sm text-blue-600">Total Users</p>
                     <p className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
                       {dashboard.total_users}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-cyan-50 to-sky-50 border-cyan-100">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
+                    <FolderOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-cyan-600">Pending Collections</p>
+                    <p className="text-2xl font-bold text-cyan-900" style={{ fontFamily: 'Bricolage Grotesque' }}>
+                      {dashboard.pending_collections || 0}
                     </p>
                   </div>
                 </div>
@@ -384,8 +437,11 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="kyc" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+        <Tabs defaultValue="collections" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="collections" className="rounded-lg">
+              <FolderOpen className="w-4 h-4 mr-2" /> Collections
+            </TabsTrigger>
             <TabsTrigger value="kyc" className="rounded-lg">
               <Shield className="w-4 h-4 mr-2" /> KYC Requests
             </TabsTrigger>
@@ -396,6 +452,95 @@ export default function AdminPage() {
               <Settings className="w-4 h-4 mr-2" /> Settings
             </TabsTrigger>
           </TabsList>
+
+          {/* Collections Tab */}
+          <TabsContent value="collections">
+            <Card>
+              <CardHeader>
+                <CardTitle style={{ fontFamily: 'Bricolage Grotesque' }}>Collection Management</CardTitle>
+                <CardDescription>Review and approve collection submissions before they go live</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {collections.length > 0 ? (
+                  <div className="space-y-4">
+                    {collections.map((collection) => (
+                      <div 
+                        key={collection.id} 
+                        className="border border-zinc-200 rounded-xl p-4 hover:bg-zinc-50 transition-colors"
+                        data-testid={`collection-item-${collection.id}`}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                          <div className="flex gap-4 flex-1">
+                            {collection.cover_image && (
+                              <img 
+                                src={collection.cover_image} 
+                                alt={collection.title}
+                                className="w-20 h-20 rounded-lg object-cover hidden sm:block"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <p className="font-semibold text-[#0a0a0a]">{collection.title}</p>
+                                {getStatusBadge(collection.status)}
+                              </div>
+                              <p className="text-sm text-zinc-500 mb-2 line-clamp-2">{collection.description}</p>
+                              <div className="flex flex-wrap gap-4 text-sm">
+                                <span className="text-zinc-600">
+                                  <strong>By:</strong> {collection.user_name} ({collection.user_email})
+                                </span>
+                                <span className="text-zinc-600">
+                                  <strong>Category:</strong> {collection.category}
+                                </span>
+                                {collection.goal_amount && (
+                                  <span className="text-zinc-600">
+                                    <strong>Goal:</strong> {formatAmount(collection.goal_amount)}
+                                  </span>
+                                )}
+                              </div>
+                              {collection.rejection_reason && (
+                                <p className="text-sm text-red-600 mt-2">
+                                  <strong>Rejection Reason:</strong> {collection.rejection_reason}
+                                </p>
+                              )}
+                              <p className="text-xs text-zinc-400 mt-2">
+                                Created: {formatDate(collection.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          {collection.status === "pending_approval" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full"
+                                onClick={() => setCollectionModal({ open: true, collection, action: "approved" })}
+                                data-testid={`approve-collection-${collection.id}`}
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50 rounded-full"
+                                onClick={() => setCollectionModal({ open: true, collection, action: "rejected" })}
+                                data-testid={`reject-collection-${collection.id}`}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" /> Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-zinc-500">
+                    <FolderOpen className="w-12 h-12 mx-auto mb-4 text-zinc-300" />
+                    <p>No collections found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* KYC Requests Tab */}
           <TabsContent value="kyc">
@@ -711,6 +856,52 @@ export default function AdminPage() {
               disabled={loading}
               className={withdrawalModal.action === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
               data-testid="confirm-withdrawal-action"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Collection Review Modal */}
+      <Dialog open={collectionModal.open} onOpenChange={(open) => !open && setCollectionModal({ open: false, collection: null, action: "" })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Bricolage Grotesque' }}>
+              {collectionModal.action === "approved" ? "Approve Collection" : "Reject Collection"}
+            </DialogTitle>
+            <DialogDescription>
+              {collectionModal.action === "approved" 
+                ? `Approve "${collectionModal.collection?.title}" to be published on the platform?`
+                : `Please provide a reason for rejecting "${collectionModal.collection?.title}".`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {collectionModal.action === "rejected" && (
+            <Textarea
+              placeholder="Enter rejection reason..."
+              value={collectionRejectionReason}
+              onChange={(e) => setCollectionRejectionReason(e.target.value)}
+              className="mt-2"
+              data-testid="collection-rejection-reason-input"
+            />
+          )}
+          {collectionModal.action === "approved" && (
+            <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <p className="text-sm text-emerald-700">
+                This collection will be visible on the public dashboard and open for donations.
+              </p>
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCollectionModal({ open: false, collection: null, action: "" })}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCollectionReview}
+              disabled={loading}
+              className={collectionModal.action === "approved" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
+              data-testid="confirm-collection-action"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
             </Button>
