@@ -4,41 +4,38 @@
 -   **Core Functionality:** Users can create public collections (fundraisers) for various activities.
 -   **Discovery:** Public collections are displayed on a dashboard/home page.
 -   **Collection Details:** Each collection has a detail page with an overview and a Donate Now form.
--   **Payments:** The app must integrate a payment gateway. The user initially started with Cashfree but has now fully migrated to **Razorpay**.
+-   **Payments:** The app must integrate a payment gateway. The app uses **Razorpay**.
 -   **Authentication:** Users must log in to create collections.
 -   **User Dashboard:** A My Collections page where users can view and manage the fundraisers they have created.
--   **Withdrawals:** A system for collection organizers to withdraw their collected funds. This requires:
-    -   KYC submission by the user (Bank Account/UPI, PAN, Aadhaar).
-    -   An admin approval process for KYC.
-    -   An admin to set a platform fee.
-    -   Withdrawals are triggered by admin approval.
--   **Static Pages:** The application should have standard legal and informational pages like About Us, Contact Us, Terms & Conditions, Privacy Policy, and Refund Policy, all accessible from the footer.
+-   **Withdrawals:** A system for collection organizers to withdraw their collected funds, requiring KYC submission and admin approval.
+-   **Static Pages:** About Us, Contact Us, Terms & Conditions, Privacy Policy, and Refund Policy.
+-   **Admin Approval for Collections:** Admins must review and approve all new collections before they are published on the site.
 
 **User's preferred language**: English
 
 **what currently exists?**
 A full-stack crowdfunding platform, FundFlow, has been developed with a React frontend, FastAPI backend, and MongoDB database.
 
--   **Core Features:** Users can register, log in, create collections, browse public collections (which is now the homepage), and view collection details.
--   **Payment & Payouts Migration:** The entire payment and payout system has been migrated from **Cashfree** to **Razorpay**.
-    -   **Donations:** Handled via **Razorpay Payment Gateway** (checkout modal for Card/UPI). The system is currently configured for **TEST mode**.
-    -   **Withdrawals:** Handled via **RazorpayX Payouts API**. The flow requires admin approval and has been successfully tested.
--   **KYC & Admin:** A complete backend and frontend flow for User KYC and Fund Withdrawals is implemented, including a user profile page and a polished admin panel for managing KYC and withdrawal requests.
--   **UI/UX:** The UI has been significantly updated based on user feedback, including making the Browse Collections page the new homepage, adding new static pages, and updating content.
+-   **Core Features:** Users can register, log in, create collections (which now require admin approval), browse approved public collections, and view collection details.
+-   **Payment & Payouts:** The entire payment and payout system uses **Razorpay**.
+    -   **Donations:** Handled via **Razorpay Payment Gateway**.
+    -   **Withdrawals:** Handled via **RazorpayX Payouts API**. The withdrawal status (e.g.,  -> ) is now updated via a newly implemented webhook and can be manually synced from the admin panel.
+-   **Admin Panel:** The admin panel has been enhanced to manage KYC, withdrawal requests, and now includes a full **Collection Management** feature for approving or rejecting user-submitted collections.
+-   **Bug Fixes:** Several bugs related to hardcoded customer data in Razorpay and UI input fields have been resolved.
 
 **Last working item**:
--   **Last item agent was working:** The user requested to remove the header (Browse Collections) and the subheading (Discover and support causes that matter to you) from the home page (which is now the  page). The agent implemented this change by modifying .
+-   **Last item agent was working:** The agent finished implementing a Collection Management feature in the Admin panel. This ensures that new collections are created with a  status and are only made public after an admin reviews and approves them.
 -   **Status:** USER VERIFICATION PENDING
 -   **Agent Testing Done:** Y
--   **Which testing method agent to use?** screenshot tool
+-   **Which testing method agent to use?** testing_agent_v3_fork (to run a full regression test on the new feature and existing flows).
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
 -   **Issue 1:** (P0) Razorpay Smart Collect webhook is not configured.
-    -   **Description:** The backend code for Razorpay Smart Collect (Virtual Accounts) exists, but the user requested to hide the UI for it. If this feature is re-enabled, payments made via bank transfer will not be automatically credited until a webhook is set up in the Razorpay dashboard.
-    -   **Next debug checklist:** The agent must provide the user with instructions to configure the webhook in their Razorpay dashboard. The URL is , and the active event should be . The user must provide the .
-    -   **Why fix this issue and what will be achieved with the fix?** This will enable automated reconciliation of payments if the Smart Collect (Bank/UPI transfer) donation method is re-introduced.
-    -   **Status:** BLOCKED (waiting on user action)
+    -   **Description:** The backend code for Razorpay Smart Collect (Virtual Accounts) exists, but the UI for it is hidden per a previous user request. If this feature is re-enabled, payments made via bank transfer will not be automatically credited until a webhook is set up. This was deprioritized by the user but remains an open item.
+    -   **Next debug checklist:** Provide the user with instructions to configure the webhook in their Razorpay dashboard. The URL is , and the active event should be . The agent must ask the user for the .
+    -   **Why fix this issue and what will be achieved with the fix?** Enables automated reconciliation of bank transfer donations if the Smart Collect feature is re-introduced.
+    -   **Status:** BLOCKED (waiting on user action/decision)
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** backend
     -   **Blocked on other issue:** None
@@ -49,37 +46,31 @@ None.
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
     -   (P1) **Implement Gallery Feature:** Implement the gallery tab on the collection details page, allowing organizers to add images/videos.
-    -   (P2) **Update Contact Info:** The Contact Us page was created with placeholder data. The user may need to provide actual contact details (email, phone, address).
+    -   (P2) **Update Contact Info:** The Contact Us page was created with placeholder data. The user needs to provide actual contact details (email, phone, address).
 -   **Future Tasks:**
     -   (P2) **Email Notifications:** Integrate an email service (e.g., Resend) for donation receipts, withdrawal status updates, and other notifications.
     -   (P2) **Social Sharing:** Add social sharing buttons to collection pages.
 
 **Completed work in this session**
--   **Full Payment System Migration (Cashfree → Razorpay):**
-    -   Replaced Cashfree Payment Gateway with **Razorpay Payment Gateway** for donations.
-    -   Replaced Cashfree Payouts with **RazorpayX Payouts API** for fund withdrawals.
-    -   Successfully debugged and tested the entire RazorpayX payout flow (contact creation, fund account creation, payout initiation).
-    -   Switched between Razorpay Test and Live modes as requested. The app is currently in **Test Mode**.
--   **Razorpay Smart Collect Implementation & UI Tweak:**
-    -   Implemented backend logic for Razorpay Smart Collect (creating virtual accounts for collections).
-    -   Initially added a UI for donors to choose between Bank Transfer (Smart Collect) and Card/UPI (Checkout).
-    -   Removed the Bank Transfer UI from the donation page per user request, defaulting to the Card/UPI checkout form.
--   **Major UI/UX Changes:**
-    -   Made the **Browse Collections page the new Home Page** and deleted the old .
-    -   Simplified the main navigation and footer to reflect the new homepage structure.
-    -   Removed the hero section and title from the new homepage for a cleaner look.
-    -   Added a Ready to Start Collecting? CTA section to the bottom of the Browse Collections page.
-    -   Polished the **Admin Dashboard UI** with new stat cards (including Pending Withdrawals) and improved styling.
--   **Feature Enhancements & Fixes:**
-    -   Made the Goal Amount for collections optional on both the frontend and backend.
-    -   Set the minimum donation amount to ₹1.
-    -   Created and linked four new static pages: **Contact Us, Terms & Conditions, Privacy Policy, and Refund & Cancellation Policy**.
-    -   Updated the About Us page content to align with the user's business description.
-    -   Fixed a bug where a redundant Donate Now button appeared on mobile devices.
-    -   Fixed the Admin Page layout to remove the main public site header.
+-   **Implemented Collection Management Feature:**
+    -   Collections are now created with a  status by default.
+    -   Only collections with an  status are visible on the public browsing page.
+    -   The Admin Panel now has a Collections tab to view, approve, and reject submissions.
+    -   The Admin dashboard shows a count of pending collections.
+    -   The user's My Collections page displays the status (Pending, Active, Rejected) of their collections.
+-   **Fixed RazorpayX Payout Status Flow:**
+    -   Investigated why withdrawal status was stuck on Processing.
+    -   Added a new webhook endpoint () to receive status updates from RazorpayX.
+    -   Added a manual sync endpoint () and a Sync Status button in the admin UI for admins to refresh payout statuses.
+-   **Fixed Hardcoded Customer Identifiers:**
+    -   Removed hardcoded fallbacks for email, phone, and bank account holder name when creating Razorpay contacts and fund accounts. The system now uses actual user data from their profile or KYC submission.
+-   **Fixed Unnecessary Razorpay Customer Creation:**
+    -   Disabled the automatic creation of Razorpay Smart Collect virtual accounts during collection creation, as the corresponding UI feature is hidden. This prevents creating unnecessary customer entries in Razorpay.
+-   **Fixed Donation Form Phone Input Bug:**
+    -   Corrected a logic error in  that prevented authenticated users from entering a phone number in the donation form.
 
 **Earlier issues found/mentioned but not fixed**
--   The critical blocker from the previous session (**Cashfree account configuration**) is no longer relevant as the entire system has been migrated to Razorpay.
+None.
 
 **Known issue recurrence from previous fork**
 None.
@@ -90,8 +81,8 @@ None.
 **Key Technical Concepts**
 -   **Backend:** FastAPI, MongoDB (via ), Pydantic, JWT.
 -   **Frontend:** React, React Router,  for global state, TailwindCSS.
--   **Payments (Donations):** **Razorpay Payment Gateway** (Checkout via SDK).
--   **Payouts (Withdrawals):** **RazorpayX Payouts API** (direct HTTP calls).
+-   **Payments:** Razorpay Payment Gateway & RazorpayX Payouts API.
+-   **Workflow:** Admin approval flow for user-generated content (collections).
 
 **key DB schema**
 -   **users**: 
@@ -101,61 +92,47 @@ None.
 -   **withdrawals**: 
 
 **changes in tech stack**
--   **Complete Migration from Cashfree to Razorpay:**
-    -   Donations: Cashfree Payment Gateway → **Razorpay Payment Gateway**.
-    -   Payouts: Cashfree Payouts API → **RazorpayX Payouts API**.
+None.
 
 **All files of reference**
--   **Created Files:**
-    -   
-    -   
-    -   
-    -   
--   **Deleted Files:**
-    -   
 -   **Heavily Modified Files:**
-    -   : Complete overhaul of payment and payout logic to integrate Razorpay Checkout, Smart Collect (backend only), and RazorpayX Payouts. It has grown even larger.
-    -   : Removed Cashfree keys and added Razorpay keys and RazorpayX account number.
-    -   : Major refactoring to handle Razorpay Checkout flow, then Smart Collect, and then reverting to Checkout only.
-    -   : Rerouted the home ('/') path to  and added routes for new static pages.
-    -   : Updated header and footer navigation links.
-    -   : UI polished with new stat cards and updated text for payout processing.
-    -   : Became the new home page, had a CTA section added, and then its header removed.
+    -   : Added collection management endpoints, payout webhooks, status sync logic, and fixed hardcoded values.
+    -   : Major overhaul to add a Collections management tab, new stat cards, and modals.
+    -   : Fixed phone number input bug in the donation form.
+    -   : Added status badges to user-owned collection cards.
+    -   : Added a notification message informing users about the review process.
 
 **Areas that need refactoring**:
--    is critically monolithic. It urgently needs to be broken down into separate modules for routes, database models, payment services (Razorpay), payout services (RazorpayX), and KYC logic to improve maintainability.
+-    is critically monolithic. It has expanded further to include collection management logic. It urgently needs to be broken down into separate modules (e.g., , , ) for maintainability.
 
 **key api endpoints**
 -    (POST)
 -    (POST)
--    (POST) - *Logic exists but UI is hidden and webhook not configured*
--    (GET) - *Logic exists but UI is hidden*
 -    (GET)
--    (POST) - *Now uses RazorpayX Payouts*
+-    (POST)
+-    (POST)
+-    (POST) - Now creates collections with  status.
+-    (GET) - Now only returns  collections.
 
 **Critical Info for New Agent**
--   **Razorpay is the SOLE payment provider.** All Cashfree code has been removed. Do not attempt to debug any Cashfree-related issues from the original handoff; they are obsolete.
--   **The app is in Razorpay TEST Mode.** Use Razorpay's test credentials for any payment/payout testing. The user has provided live keys and may ask to switch back.
--   **Two Donation Methods Implemented (One Hidden):** The backend supports both Razorpay Checkout (Card/UPI modal) and Razorpay Smart Collect (Virtual Accounts). However, per the user's request, the frontend UI for Smart Collect has been removed, and only the Checkout form is shown. Be aware that the backend logic for Smart Collect is still present in .
--   **RazorpayX Payouts are working.** The flow is . The integration has been tested and works, with payouts being  due to low balance in the test account, which is expected behavior.
+-   **Collection Approval is Mandatory:** All user-created collections must be approved by an admin via the new Collections tab in the Admin Panel before they appear on the public site.
+-   **Payout Status is Automated:** The status of withdrawals (e.g., from Processing to Completed) should now update automatically via the RazorpayX Payouts webhook. A Sync Status button also exists for manual checks by the admin.
+-   **Smart Collect is Disabled:** The feature for creating Razorpay Smart Collect virtual accounts on collection creation has been commented out in  because the corresponding frontend UI was removed. The agent should be aware of this before attempting to re-enable it. The user has an open question about their preference for how this should work.
 
 **documents and test reports created in this job**
--   /app/memory/PRD.md
+-   /app/memory/PRD.md (Note: This file was not updated in the last session as the  tool was not called. It should be updated to reflect the completion of the Collection Management feature).
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Remove Collect Funds Together, Easily section from the Home page. (COMPLETED)
-2.  **User:** Add Ready to Start Collecting? section to the Browse Collections page. (COMPLETED)
-3.  **User:** Make Browse Collections page the new Home page. (COMPLETED)
-4.  **User:** Remove the Browse Collections label/header from the new home page. (COMPLETED)
-5.  **User:** Wants help setting up webhooks and migrating to Razorpay Payouts. (COMPLETED)
-6.  **User:** Confirms they want the platform-controlled payout flow (Option 1). (ADDRESSED)
-7.  **User:** Provides their RazorpayX Account Number for payouts. (COMPLETED)
-8.  **User:** Asks to switch to Razorpay Live mode and provides keys. (COMPLETED)
-9.  **User:** Remove Bank/UPI transfer option from the donation page. (COMPLETED)
-10. **User:** Set minimum donation amount to ₹1. (COMPLETED)
+1.  **User:** Implement Collection Management on Admin panel so collections require admin approval. (COMPLETED)
+2.  **User:** Unable to add phone number while donation. (COMPLETED)
+3.  **User:** I think you misunderstood the Smart Collect feature. Please read the document... (ADDRESSED - The agent re-evaluated and asked for user preference on how to proceed, but the user changed topics. This question is still pending.)
+4.  **User:** Please check the flow. User has created a Collection without KYC... Razorpay customer created with default values. (COMPLETED)
+5.  **User:** What about beneficiary name, UPI and IFSC code in customer identifier? Hardcoded? (COMPLETED)
+6.  **User:** Customer Identifier details are hardcoded or default? (COMPLETED)
+7.  **User:** Admin has approved the withdrawal request but it is still showing Processing. (COMPLETED)
 
 **Project Health Check:**
--   **Working:** Core platform (auth, collections), KYC, Admin Panel, Razorpay Checkout donations, and RazorpayX payouts. All recent UI change requests have been implemented.
+-   **Working:** Core platform (auth, collections), KYC, Admin Panel (including new Collection Management), Razorpay Checkout donations, and RazorpayX payouts with status syncing.
 -   **Broken:** None.
 -   **Mocked:** None.
 
@@ -174,4 +151,5 @@ None.
 -   **Admin:**  / 
 
 **What agent forgot to execute**
-The agent correctly implemented all user requests. The only potential point of confusion is the Smart Collect code that exists on the backend but is not used by the frontend. The agent should have considered adding a comment or note in the code to clarify why the corresponding UI was removed to prevent future confusion.</analysis>
+-   The agent did not call the  tool, so the  file was not updated with the newly completed Collection Management feature.
+-   The agent asked the user for their preference on how the Smart Collect feature should be handled (), but the user pivoted to another issue. This clarification should be sought again before any work is done on Smart Collect.</analysis>
